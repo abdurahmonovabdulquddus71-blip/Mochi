@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Heart, LogOut, Lock, Loader, Eye } from 'lucide-react';
+import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://itxndrvoolbvzdseuljx.supabase.co';
@@ -20,6 +21,7 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [views, setViews] = useState({});
+  const router = useRouter();
 
   const showModal = (type, message, onConfirm = null) => {
     setModal({ show: true, type, message, onConfirm });
@@ -52,22 +54,51 @@ export default function Home() {
     }
   }, [carouselData]);
 
-  const checkCurrentUser = () => {
+  const checkCurrentUser = async () => {
     try {
       const user = localStorage.getItem('anime_user');
       if (user) {
-        setCurrentUser(JSON.parse(user));
-        const favs = localStorage.getItem('anime_favorites');
-        if (favs) {
-          setFavorites(JSON.parse(favs));
-        }
-        const v = localStorage.getItem('anime_views');
-        if (v) {
-          setViews(JSON.parse(v));
-        }
+        const userData = JSON.parse(user);
+        setCurrentUser(userData);
+        await loadUserFavorites(userData.id);
+        await loadUserViews(userData.id);
       }
     } catch (error) {
       console.error('User check error:', error);
+    }
+  };
+
+  const loadUserFavorites = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_favorites')
+        .select('anime_id')
+        .eq('user_id', userId);
+
+      if (!error && data) {
+        setFavorites(data.map(f => f.anime_id));
+      }
+    } catch (error) {
+      console.error('Load favorites error:', error);
+    }
+  };
+
+  const loadUserViews = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('anime_views')
+        .select('anime_id, view_count')
+        .eq('user_id', userId);
+
+      if (!error && data) {
+        const viewsObj = {};
+        data.forEach(v => {
+          viewsObj[v.anime_id] = v.view_count;
+        });
+        setViews(viewsObj);
+      }
+    } catch (error) {
+      console.error('Load views error:', error);
     }
   };
 
@@ -111,6 +142,8 @@ export default function Home() {
 
       localStorage.setItem('anime_user', JSON.stringify(data));
       setCurrentUser(data);
+      await loadUserFavorites(data.id);
+      await loadUserViews(data.id);
       hideAuthModal();
       showModal('success', 'Xush kelibsiz, ' + data.username + '!');
     } catch (error) {
@@ -169,28 +202,98 @@ export default function Home() {
 
   const handleLogout = () => {
     localStorage.removeItem('anime_user');
-    localStorage.removeItem('anime_favorites');
-    localStorage.removeItem('anime_views');
     setCurrentUser(null);
     setFavorites([]);
     setViews({});
     showModal('success', 'Tizimdan chiqdingiz!');
   };
 
-  const toggleFavorite = (animeId) => {
-    const newFavorites = favorites.includes(animeId)
-      ? favorites.filter(id => id !== animeId)
-      : [...favorites, animeId];
-    
-    setFavorites(newFavorites);
-    localStorage.setItem('anime_favorites', JSON.stringify(newFavorites));
+  const toggleFavorite = async (animeId) => {
+    if (!currentUser) {
+      showModal('error', 'Saralanganlarni saqlash uchun tizimga kiring!');
+      return;
+    }
+
+    try {
+      const isFavorite = favorites.includes(animeId);
+
+      if (isFavorite) {
+        // O'chirish
+        const { error } = await supabase
+          .from('user_favorites')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('anime_id', animeId);
+
+        if (!error) {
+          setFavorites(favorites.filter(id => id !== animeId));
+        }
+      } else {
+        // Qo'shish
+        const { error } = await supabase
+          .from('user_favorites')
+          .insert([{ user_id: currentUser.id, anime_id: animeId }]);
+
+        if (!error) {
+          setFavorites([...favorites, animeId]);
+        }
+      }
+    } catch (error) {
+      console.error('Favorite error:', error);
+      showModal('error', 'Xatolik yuz berdi');
+    }
   };
 
-  const addView = (animeId) => {
-    const newViews = { ...views };
-    newViews[animeId] = (newViews[animeId] || 0) + 1;
-    setViews(newViews);
-    localStorage.setItem('anime_views', JSON.stringify(newViews));
+  const addView = async (animeId) => {
+    if (!currentUser) return;
+
+    try {
+      // Avval mavjudligini tekshirish
+      const { data: existing } = await supabase
+        .from('anime_views')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('anime_id', animeId)
+        .single();
+
+      if (existing) {
+        // Yangilash
+        const newCount = existing.view_count + 1;
+        const { error } = await supabase
+          .from('anime_views')
+          .update({ 
+            view_count: newCount,
+            last_viewed: new Date().toISOString()
+          })
+          .eq('user_id', currentUser.id)
+          .eq('anime_id', animeId);
+
+        if (!error) {
+          setViews({ ...views, [animeId]: newCount });
+        }
+      } else {
+        // Yangi qo'shish
+        const { error } = await supabase
+          .from('anime_views')
+          .insert([{ 
+            user_id: currentUser.id, 
+            anime_id: animeId,
+            view_count: 1
+          }]);
+
+        if (!error) {
+          setViews({ ...views, [animeId]: 1 });
+        }
+      }
+    } catch (error) {
+      console.error('View error:', error);
+    }
+  };
+
+  const goToAnime = (anime) => {
+    addView(anime.id);
+    const slugTitle = anime.title.toLowerCase().replace(/\s+/g, '-');
+    router.push(`/anime/${slugTitle}?id=${anime.id}`);
   };
 
   const goToSlide = (index) => {
@@ -247,14 +350,15 @@ export default function Home() {
           justify-content: space-between;
           align-items: center;
           gap: 15px;
+          background: rgba(0, 0, 0, 0.95);
           border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-              background-color: rgba(17, 17, 17, 0.5);
-    backdrop-filter: blur(1rem);
+          backdrop-filter: blur(10px);
         }
 
         .header-logo {
           height: 40px;
           width: auto;
+          cursor: pointer;
         }
 
         .header-right {
@@ -497,12 +601,11 @@ export default function Home() {
           cursor: pointer;
           transition: transform 0.3s;
           position: relative;
-          border-radius: 12px;
+          border-radius: 20px;
           overflow: hidden;
         }
 
-      
-
+       
         .card-image-wrapper {
           width: 100%;
           aspect-ratio: 2/3;
@@ -513,10 +616,10 @@ export default function Home() {
 
         .card-image {
           width: 100%;
-          height: 95%;
+          height: 100%;
           object-fit: cover;
           transition: transform 0.3s;
-          border-radius:20px;
+          border-radius: 20px;
         }
 
         .anime-card:hover .card-image {
@@ -630,7 +733,7 @@ export default function Home() {
         }
 
         .card-content {
-          padding: 0px 15px;
+          padding: 15px;
         }
 
         .card-title {
@@ -963,7 +1066,7 @@ export default function Home() {
       <div className="container">
         {/* Header */}
         <div className="site-header">
-          <img src={LOGO_URL} alt="AnimeBox" className="header-logo" />
+          <img src={LOGO_URL} alt="AnimeBox" className="header-logo" onClick={() => router.push('/')} />
           
           <div className="header-right">
             {currentUser ? (
@@ -1060,7 +1163,7 @@ export default function Home() {
               </div>
             ) : (
               animeCards.map((anime) => (
-                <div key={anime.id} className="anime-card">
+                <div key={anime.id} className="anime-card" onClick={() => goToAnime(anime)}>
                   <div className="card-image-wrapper">
                     <img className="card-image" src={anime.image_url} alt={anime.title} />
                     
@@ -1072,14 +1175,17 @@ export default function Home() {
                       </div>
                       <button 
                         className={`card-like-btn ${favorites.includes(anime.id) ? 'liked' : ''}`}
-                        onClick={() => toggleFavorite(anime.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(anime.id);
+                        }}
                       >
                         <Heart size={16} fill={favorites.includes(anime.id) ? 'currentColor' : 'none'} />
                       </button>
                     </div>
                     
                     {/* Card Overlay */}
-                    <div className="card-overlay" onClick={() => addView(anime.id)}>
+                    <div className="card-overlay">
                       <div className="card-overlay-info">
                         <div className="card-overlay-meta">
                           <div className="card-rating">

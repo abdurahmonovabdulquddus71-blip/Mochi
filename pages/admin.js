@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Film, Plus, Trash2, X, Upload, Star, Tv, Image as ImageIcon, Loader } from 'lucide-react';
+import { Film, Plus, Trash2, X, Upload, Star, Tv, Image as ImageIcon, Loader, Edit } from 'lucide-react';
 
 const supabaseUrl = 'https://itxndrvoolbvzdseuljx.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0eG5kcnZvb2xidnpkc2V1bGp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzUyNjYsImV4cCI6MjA3MzcxMTI2Nn0.4x264DWr3QVjgPQYqf73QdAypfhKXvuVxw3LW9QYyGM';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Admin() {
-  const [modal, setModal] = useState({ show: false, type: '', message: '', title: '', onConfirm: null });
+  const [modal, setModal] = useState({ show: false, type: '', message: '', title: '', onConfirm: null, data: null });
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -15,12 +15,12 @@ export default function Admin() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  const showModal = (type, message, onConfirm = null, title = '') => {
-    setModal({ show: true, type, message, onConfirm, title });
+  const showModal = (type, message, onConfirm = null, title = '', data = null) => {
+    setModal({ show: true, type, message, onConfirm, title, data });
   };
 
   const hideModal = () => {
-    setModal({ show: false, type: '', message: '', title: '', onConfirm: null });
+    setModal({ show: false, type: '', message: '', title: '', onConfirm: null, data: null });
   };
 
   useEffect(() => {
@@ -68,8 +68,16 @@ export default function Admin() {
     showModal('form', '', null, 'Anime qo\'shish');
   };
 
+  const handleEditAnime = (anime) => {
+    showModal('form', '', null, 'Anime tahrirlash', anime);
+  };
+
   const handleAddCarousel = () => {
     showModal('carousel-form', '', null, 'Carousel qo\'shish');
+  };
+
+  const handleManageEpisodes = (anime) => {
+    window.location.href = `/episodes?anime_id=${anime.id}&anime_title=${encodeURIComponent(anime.title)}`;
   };
 
   const handleLogout = () => {
@@ -137,7 +145,7 @@ export default function Admin() {
           margin-bottom: 40px;
           padding: 30px;
           background: #000000;
-          border-radius: 0;
+          border-radius: 8px;
           border: 2px solid #ffffff;
           flex-wrap: wrap;
           gap: 15px;
@@ -163,7 +171,7 @@ export default function Admin() {
           border: 2px solid #ffffff;
           color: #ffffff;
           padding: 12px 24px;
-          border-radius: 0;
+          border-radius: 8px;
           cursor: pointer;
           font-size: 14px;
           font-weight: 600;
@@ -202,7 +210,7 @@ export default function Admin() {
           color: #ffffff;
           border: 2px solid #ffffff;
           padding: 16px 32px;
-          border-radius: 0;
+          border-radius: 8px;
           cursor: pointer;
           font-size: 16px;
           font-weight: 700;
@@ -229,7 +237,7 @@ export default function Admin() {
         .anime-card {
           background: #000000;
           border: 2px solid #ffffff;
-          border-radius: 0;
+          border-radius: 12px;
           overflow: hidden;
           transition: all 0.2s;
         }
@@ -241,7 +249,6 @@ export default function Admin() {
 
         .card-image-wrapper {
           width: 100%;
-          aspect-ratio: 2/3;
           position: relative;
           overflow: hidden;
           border-bottom: 2px solid #ffffff;
@@ -249,7 +256,7 @@ export default function Admin() {
 
         .card-image {
           width: 100%;
-          height: 100%;
+          height: 250px;
           object-fit: cover;
           transition: transform 0.3s;
         }
@@ -293,7 +300,7 @@ export default function Admin() {
           border: 2px solid #ffffff;
           color: #ffffff;
           padding: 10px 16px;
-          border-radius: 0;
+          border-radius: 8px;
           cursor: pointer;
           font-size: 14px;
           font-weight: 600;
@@ -329,7 +336,7 @@ export default function Admin() {
         .modal {
           background: #000000;
           border: 2px solid #ffffff;
-          border-radius: 0;
+          border-radius: 12px;
           padding: 40px;
           max-width: 600px;
           width: 100%;
@@ -366,7 +373,7 @@ export default function Admin() {
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
-          border-radius: 0;
+          border-radius: 8px;
         }
 
         .modal-close:hover {
@@ -394,7 +401,7 @@ export default function Admin() {
           padding: 14px 16px;
           background: #000000;
           border: 2px solid #ffffff;
-          border-radius: 0;
+          border-radius: 8px;
           color: #ffffff;
           font-size: 15px;
           font-family: 'Courier New', Courier, monospace;
@@ -409,7 +416,7 @@ export default function Admin() {
 
         .form-file-upload {
           border: 2px dashed #ffffff;
-          border-radius: 0;
+          border-radius: 8px;
           padding: 40px;
           text-align: center;
           cursor: pointer;
@@ -434,7 +441,7 @@ export default function Admin() {
 
         .image-preview {
           margin-top: 20px;
-          border-radius: 0;
+          border-radius: 8px;
           overflow: hidden;
           max-width: 240px;
           margin-left: auto;
@@ -466,7 +473,7 @@ export default function Admin() {
           border: 2px solid #ffffff;
           color: #ffffff;
           padding: 8px 16px;
-          border-radius: 0;
+          border-radius: 8px;
           font-size: 13px;
           display: flex;
           align-items: center;
@@ -500,7 +507,7 @@ export default function Admin() {
 
         .modal-btn {
           padding: 12px 28px;
-          border-radius: 0;
+          border-radius: 8px;
           border: 2px solid #ffffff;
           font-weight: 700;
           cursor: pointer;
@@ -560,7 +567,7 @@ export default function Admin() {
           width: 64px;
           height: 64px;
           border: 2px solid #ffffff;
-          border-radius: 0;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -581,7 +588,7 @@ export default function Admin() {
           margin-top: 24px;
           padding: 24px;
           background: #000000;
-          border-radius: 0;
+          border-radius: 8px;
           border: 2px solid #ffffff;
         }
 
@@ -600,14 +607,14 @@ export default function Admin() {
           height: 10px;
           background: #000000;
           border: 2px solid #ffffff;
-          border-radius: 0;
+          border-radius: 8px;
           overflow: hidden;
         }
 
         .progress-bar-fill {
           height: 100%;
           background: #ffffff;
-          border-radius: 0;
+          border-radius: 8px;
           transition: width 0.3s ease;
         }
 
@@ -633,7 +640,7 @@ export default function Admin() {
           padding: 16px;
           background: #000000;
           border: 2px solid #ffffff;
-          border-radius: 0;
+          border-radius: 8px;
           margin-bottom: 12px;
           cursor: pointer;
           transition: all 0.2s;
@@ -653,6 +660,7 @@ export default function Admin() {
           height: 90px;
           object-fit: cover;
           border: 2px solid #ffffff;
+          border-radius: 6px;
         }
 
         .anime-select-info {
@@ -683,7 +691,7 @@ export default function Admin() {
           padding: 20px;
           background: #000000;
           border: 2px solid #ffffff;
-          border-radius: 0;
+          border-radius: 8px;
           color: #ffffff;
           font-weight: 700;
           font-size: 18px;
@@ -803,6 +811,14 @@ export default function Admin() {
                     <span><Star size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {anime.rating}</span>
                   </div>
                   <div className="card-actions">
+                    <button className="card-btn" onClick={() => handleManageEpisodes(anime)}>
+                      <Tv size={16} />
+                      Qismlar
+                    </button>
+                    <button className="card-btn" onClick={() => handleEditAnime(anime)}>
+                      <Edit size={16} />
+                      Tahrirlash
+                    </button>
                     <button className="card-btn delete" onClick={() => handleDeleteAnime(anime.id, anime.title)}>
                       <Trash2 size={16} />
                       O'chirish
@@ -850,7 +866,18 @@ function AnimeModal({ modal, hideModal, showModal, loadAnimeCards, animeList, up
     if (modal.type === 'carousel-form') {
       loadOccupiedPositions();
     }
-  }, [modal.type]);
+    if (modal.type === 'form' && modal.data) {
+      // Tahrirlash uchun ma'lumotlarni yuklash
+      setFormData({
+        title: modal.data.title || '',
+        episodes: modal.data.episodes || '',
+        rating: modal.data.rating || '',
+        genres: modal.data.genres || [],
+        imageFile: null,
+        imagePreview: modal.data.image_url || null
+      });
+    }
+  }, [modal.type, modal.data]);
 
   const loadOccupiedPositions = async () => {
     try {
@@ -917,8 +944,14 @@ function AnimeModal({ modal, hideModal, showModal, loadAnimeCards, animeList, up
   };
 
   const handleSubmit = async () => {
-    if (!formData.title || !formData.episodes || !formData.rating || !formData.imageFile) {
+    if (!formData.title || !formData.episodes || !formData.rating) {
       showModal('error', 'Barcha maydonlarni to\'ldiring!');
+      return;
+    }
+
+    // Yangi anime qo'shishda rasm majburiy
+    if (!modal.data && !formData.imageFile) {
+      showModal('error', 'Iltimos rasm yuklang!');
       return;
     }
 
@@ -928,20 +961,48 @@ function AnimeModal({ modal, hideModal, showModal, loadAnimeCards, animeList, up
     try {
       setUploadProgress(10);
       
-      setUploadProgress(30);
-      const imageUrl = await uploadImageToSupabase(formData.imageFile);
+      let imageUrl = formData.imagePreview;
+
+      // Agar yangi rasm yuklangan bo'lsa
+      if (formData.imageFile) {
+        setUploadProgress(30);
+        imageUrl = await uploadImageToSupabase(formData.imageFile);
+        
+        // Agar tahrirlash bo'lsa va eski rasm bor bo'lsa, eski rasmni o'chirish
+        if (modal.data?.image_url) {
+          const oldImagePath = modal.data.image_url.split('/').pop();
+          await supabase.storage.from('anime-images').remove([oldImagePath]);
+        }
+      }
       
       setUploadProgress(70);
 
-      const { error: dbError } = await supabase.from('anime_cards').insert({
+      const animeData = {
         title: formData.title,
         image_url: imageUrl,
         episodes: parseInt(formData.episodes),
         rating: parseFloat(formData.rating),
         genres: formData.genres
-      });
+      };
 
-      if (dbError) throw dbError;
+      let error;
+
+      if (modal.data) {
+        // Tahrirlash
+        const { error: updateError } = await supabase
+          .from('anime_cards')
+          .update(animeData)
+          .eq('id', modal.data.id);
+        error = updateError;
+      } else {
+        // Yangi qo'shish
+        const { error: insertError } = await supabase
+          .from('anime_cards')
+          .insert(animeData);
+        error = insertError;
+      }
+
+      if (error) throw error;
 
       setUploadProgress(100);
 
@@ -949,7 +1010,7 @@ function AnimeModal({ modal, hideModal, showModal, loadAnimeCards, animeList, up
         setIsUploading(false);
         setUploadProgress(0);
         hideModal();
-        showModal('success', 'Anime muvaffaqiyatli qo\'shildi!');
+        showModal('success', modal.data ? 'Anime muvaffaqiyatli tahrirlandi!' : 'Anime muvaffaqiyatli qo\'shildi!');
         loadAnimeCards();
       }, 500);
 
@@ -1002,7 +1063,7 @@ function AnimeModal({ modal, hideModal, showModal, loadAnimeCards, animeList, up
               <input type="file" accept="image/*" onChange={handleImageChange} disabled={isUploading} />
               <Upload size={48} />
               <div className="file-upload-text">
-                {formData.imageFile ? formData.imageFile.name : 'Rasm tanlang yoki bu yerga tashlang'}
+                {formData.imageFile ? formData.imageFile.name : modal.data ? 'Yangi rasm tanlang (ixtiyoriy)' : 'Rasm tanlang yoki bu yerga tashlang'}
               </div>
             </label>
             {formData.imagePreview && (
@@ -1114,7 +1175,7 @@ function AnimeModal({ modal, hideModal, showModal, loadAnimeCards, animeList, up
               Bekor qilish
             </button>
             <button className="modal-btn primary" onClick={handleSubmit} type="button" disabled={isUploading}>
-              {isUploading ? 'Yuklanmoqda...' : 'Saqlash'}
+              {isUploading ? 'Yuklanmoqda...' : modal.data ? 'Yangilash' : 'Saqlash'}
             </button>
           </div>
         </div>
