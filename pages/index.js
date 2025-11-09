@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Heart, LogOut, Lock, Loader, Eye } from 'lucide-react';
-import { useRouter } from 'next/router';
+import { Heart, LogOut, Lock, Loader, Eye, Play } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://itxndrvoolbvzdseuljx.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0eG5kcnZvb2xidnpkc2V1bGp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzUyNjYsImV4cCI6MjA3MzcxMTI2Nn0.4x264DWr3QVjgPQYqf73QdAypfhKXvuVxw3LW9QYyGM';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const LOGO_URL = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 60%22%3E%3Ctext x=%2220%22 y=%2245%22 font-size=%2232%22 font-weight=%22bold%22 fill=%22%233b82f6%22%3EAnime%3C/text%3E%3Ctext x=%2220%22 y=%2258%22 font-size=%2214%22 fill=%22rgba(255,255,255,0.6)%22%3EBox%3C/text%3E%3C/svg%3E';
+const LOGO_URL = '/assets/lego.png';
 
 export default function Home() {
   const [modal, setModal] = useState({ show: false, type: '', message: '', onConfirm: null });
@@ -20,8 +19,7 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [favorites, setFavorites] = useState([]);
-  const [views, setViews] = useState({});
-  const router = useRouter();
+  const [allViews, setAllViews] = useState({});
 
   const showModal = (type, message, onConfirm = null) => {
     setModal({ show: true, type, message, onConfirm });
@@ -61,7 +59,6 @@ export default function Home() {
         const userData = JSON.parse(user);
         setCurrentUser(userData);
         await loadUserFavorites(userData.id);
-        await loadUserViews(userData.id);
       }
     } catch (error) {
       console.error('User check error:', error);
@@ -83,22 +80,24 @@ export default function Home() {
     }
   };
 
-  const loadUserViews = async (userId) => {
+  const loadAllViews = async () => {
     try {
       const { data, error } = await supabase
         .from('anime_views')
-        .select('anime_id, view_count')
-        .eq('user_id', userId);
+        .select('anime_id, view_count');
 
       if (!error && data) {
         const viewsObj = {};
         data.forEach(v => {
-          viewsObj[v.anime_id] = v.view_count;
+          if (!viewsObj[v.anime_id]) {
+            viewsObj[v.anime_id] = 0;
+          }
+          viewsObj[v.anime_id] += v.view_count;
         });
-        setViews(viewsObj);
+        setAllViews(viewsObj);
       }
     } catch (error) {
-      console.error('Load views error:', error);
+      console.error('Load all views error:', error);
     }
   };
 
@@ -117,6 +116,8 @@ export default function Home() {
 
       setCarouselData(carouselItems || []);
       setAnimeCards(cards || []);
+      
+      await loadAllViews();
     } catch (error) {
       console.error('Xato:', error);
       showModal('error', 'Ma\'lumotlarni yuklashda xato yuz berdi');
@@ -143,7 +144,6 @@ export default function Home() {
       localStorage.setItem('anime_user', JSON.stringify(data));
       setCurrentUser(data);
       await loadUserFavorites(data.id);
-      await loadUserViews(data.id);
       hideAuthModal();
       showModal('success', 'Xush kelibsiz, ' + data.username + '!');
     } catch (error) {
@@ -204,7 +204,6 @@ export default function Home() {
     localStorage.removeItem('anime_user');
     setCurrentUser(null);
     setFavorites([]);
-    setViews({});
     showModal('success', 'Tizimdan chiqdingiz!');
   };
 
@@ -218,7 +217,6 @@ export default function Home() {
       const isFavorite = favorites.includes(animeId);
 
       if (isFavorite) {
-        // O'chirish
         const { error } = await supabase
           .from('user_favorites')
           .delete()
@@ -229,7 +227,6 @@ export default function Home() {
           setFavorites(favorites.filter(id => id !== animeId));
         }
       } else {
-        // Qo'shish
         const { error } = await supabase
           .from('user_favorites')
           .insert([{ user_id: currentUser.id, anime_id: animeId }]);
@@ -245,46 +242,37 @@ export default function Home() {
   };
 
   const addView = async (animeId) => {
-    if (!currentUser) return;
-
     try {
-      // Avval mavjudligini tekshirish
+      const userId = currentUser ? currentUser.id : 'guest_' + Date.now();
+      
       const { data: existing } = await supabase
         .from('anime_views')
         .select('*')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', userId)
         .eq('anime_id', animeId)
         .single();
 
       if (existing) {
-        // Yangilash
         const newCount = existing.view_count + 1;
-        const { error } = await supabase
+        await supabase
           .from('anime_views')
           .update({ 
             view_count: newCount,
             last_viewed: new Date().toISOString()
           })
-          .eq('user_id', currentUser.id)
+          .eq('user_id', userId)
           .eq('anime_id', animeId);
-
-        if (!error) {
-          setViews({ ...views, [animeId]: newCount });
-        }
       } else {
-        // Yangi qo'shish
-        const { error } = await supabase
+        await supabase
           .from('anime_views')
           .insert([{ 
-            user_id: currentUser.id, 
+            user_id: userId, 
             anime_id: animeId,
             view_count: 1
           }]);
-
-        if (!error) {
-          setViews({ ...views, [animeId]: 1 });
-        }
       }
+      
+      await loadAllViews();
     } catch (error) {
       console.error('View error:', error);
     }
@@ -293,7 +281,7 @@ export default function Home() {
   const goToAnime = (anime) => {
     addView(anime.id);
     const slugTitle = anime.title.toLowerCase().replace(/\s+/g, '-');
-    router.push(`/anime/${slugTitle}?id=${anime.id}`);
+    window.location.href = `/anime/${slugTitle}?id=${anime.id}`;
   };
 
   const goToSlide = (index) => {
@@ -338,7 +326,6 @@ export default function Home() {
           padding-bottom: 40px;
         }
 
-        /* HEADER */
         .site-header {
           position: sticky;
           top: 0;
@@ -419,34 +406,12 @@ export default function Home() {
           color: #ef4444;
         }
 
-        .admin-button {
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          border: none;
-          color: #fff;
-          padding: 10px 20px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 600;
-          transition: all 0.3s;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
-
-        .admin-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
-
-        /* CAROUSEL STYLES */
         .carousel-wrapper {
           width: 100%;
           height: 500px;
           position: relative;
           overflow: hidden;
-          margin-bottom: 60px;
+          margin-bottom: 30px;
         }
 
         .carousel-container {
@@ -475,6 +440,7 @@ export default function Home() {
           height: 100%;
           object-fit: cover;
           object-position: center;
+          filter: brightness(0.7);
         }
 
         .carousel-overlay {
@@ -482,19 +448,19 @@ export default function Home() {
           bottom: 0;
           left: 0;
           right: 0;
-          background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, transparent 100%);
           padding: 40px 20px 20px;
           z-index: 2;
         }
 
         .carousel-content {
           max-width: 1400px;
-          margin: 0 auto;
           padding: 0 20px;
+          margin-bottom: 50px;
         }
 
         .carousel-title {
-          font-size: 32px;
+          font-size: 35px;
           font-weight: 700;
           margin-bottom: 10px;
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
@@ -504,7 +470,7 @@ export default function Home() {
           display: flex;
           align-items: center;
           gap: 20px;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
           font-size: 14px;
           color: rgba(255, 255, 255, 0.8);
         }
@@ -519,7 +485,7 @@ export default function Home() {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-          margin-top: 10px;
+          margin-bottom: 12px;
         }
 
         .genre-badge {
@@ -530,6 +496,41 @@ export default function Home() {
           font-weight: 500;
           border: 1px solid rgba(59, 130, 246, 0.5);
         }
+
+        .carousel-description {
+          font-size: 14px;
+          line-height: 1.6;
+          color: rgba(255, 255, 255, 0.85);
+          max-width: 800px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .carousel-watch-btn {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          background: none;
+          border: 2px solid;
+          color: #fff;
+          padding: 7px 10px;
+          border-radius: 8px;
+          cursor: pointer;
+          backdrop-filter: blur(1rem);
+          font-size: 12px;
+          font-weight: 700;
+          transition: all 0.3s;
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          z-index: 3;
+        }
+
+     
 
         .carousel-dots {
           position: absolute;
@@ -565,7 +566,46 @@ export default function Home() {
           font-size: 18px;
         }
 
-        /* ANIME CARDS SECTION */
+        .admin-section {
+          max-width: 1400px;
+          margin: 0 auto 40px;
+          padding: 0 20px;
+          display: flex;
+          justify-content: center;
+        }
+
+        .admin-button {
+      background: -o-linear-gradient(315deg,#3b82f6,#2563eb);
+    background: none;
+    border: 2px solid;
+    color: #fff;
+    padding: 10px 20px;
+    -webkit-border-radius: 8px;
+    -moz-border-radius: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    -webkit-transition: all .3s;
+    -moz-transition: all.3s;
+    -o-transition: all.3s;
+    transition: all .3s;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -moz-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    gap: 10px;
+    -moz-box-shadow: 0 4px 15px rgba(59,130,246,.3);
+        }
+
+       
+
         .cards-section {
           max-width: 1400px;
           margin: 0 auto;
@@ -605,7 +645,6 @@ export default function Home() {
           overflow: hidden;
         }
 
-       
         .card-image-wrapper {
           width: 100%;
           aspect-ratio: 2/3;
@@ -643,15 +682,16 @@ export default function Home() {
           display: flex;
           align-items: center;
           gap: 6px;
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(0, 0, 0, 0.6);
           padding: 6px 10px;
           border-radius: 10px;
           font-size: 12px;
           color: rgba(255, 255, 255, 0.9);
+          font-weight: 600;
         }
 
         .card-like-btn {
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(0, 0, 0, 0.6);
           border: none;
           color: rgba(255, 255, 255, 0.8);
           cursor: pointer;
@@ -717,21 +757,6 @@ export default function Home() {
           color: rgba(255, 255, 255, 0.8);
         }
 
-        .card-genres-overlay {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 4px;
-          display:none;
-        }
-
-        .genre-tag-small {
-          background: rgba(59, 130, 246, 0.3);
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 10px;
-          border: 1px solid rgba(59, 130, 246, 0.5);
-        }
-
         .card-content {
           padding: 15px;
         }
@@ -745,7 +770,6 @@ export default function Home() {
           text-overflow: ellipsis;
         }
 
-        /* AUTH MODAL */
         .auth-modal-overlay {
           position: fixed;
           top: 0;
@@ -890,7 +914,6 @@ export default function Home() {
           color: #fff;
         }
 
-        /* MODAL */
         .modal-overlay {
           position: fixed;
           top: 0;
@@ -1001,7 +1024,6 @@ export default function Home() {
           animation: spin 1s linear infinite;
         }
 
-        /* RESPONSIVE */
         @media (max-width: 1200px) {
           .cards-grid {
             grid-template-columns: repeat(4, 1fr);
@@ -1018,7 +1040,7 @@ export default function Home() {
           }
 
           .carousel-title {
-            font-size: 24px;
+            font-size: 29px;
           }
         }
 
@@ -1033,7 +1055,7 @@ export default function Home() {
           }
 
           .carousel-title {
-            font-size: 20px;
+            font-size: 26px;
           }
 
           .carousel-meta {
@@ -1051,6 +1073,7 @@ export default function Home() {
 
           .carousel-content {
             padding: 25px 10px;
+            margin-bottom: 10px;
           }
 
           .site-header {
@@ -1066,24 +1089,16 @@ export default function Home() {
       <div className="container">
         {/* Header */}
         <div className="site-header">
-          <img src={LOGO_URL} alt="AnimeBox" className="header-logo" onClick={() => router.push('/')} />
+          <img src={LOGO_URL} alt="Mochi" className="header-logo" onClick={() => window.location.href = '/'} />
           
           <div className="header-right">
             {currentUser ? (
-              <>
-                <div className="user-info">
-                  <span className="user-name">{currentUser.username}</span>
-                  <button className="logout-btn" onClick={handleLogout}>
-                    <LogOut size={16} />
-                  </button>
-                </div>
-                {isAdmin && (
-                  <button className="admin-button" onClick={goToAdmin}>
-                    <Lock size={16} />
-                    Admin Panel
-                  </button>
-                )}
-              </>
+              <div className="user-info">
+                <span className="user-name">{currentUser.username}</span>
+                <button className="logout-btn" onClick={handleLogout}>
+                  <LogOut size={16} />
+                </button>
+              </div>
             ) : (
               <button className="login-btn" onClick={() => showAuthModal('login')}>
                 Kirish
@@ -1110,6 +1125,15 @@ export default function Home() {
                   className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
                 >
                   <img src={item.anime_cards.image_url} alt={item.anime_cards.title} />
+                  
+                  <button 
+                    className="carousel-watch-btn"
+                    onClick={() => goToAnime(item.anime_cards)}
+                  >
+                    <Play size={20} fill="currentColor" />
+                    Tomosha qilish
+                  </button>
+
                   <div className="carousel-overlay">
                     <div className="carousel-content">
                       <div className="carousel-title">{item.anime_cards.title}</div>
@@ -1123,9 +1147,14 @@ export default function Home() {
                       </div>
                       {item.anime_cards.genres && item.anime_cards.genres.length > 0 && (
                         <div className="carousel-genres">
-                          {item.anime_cards.genres.map((genre, idx) => (
+                          {item.anime_cards.genres.slice(0, 3).map((genre, idx) => (
                             <span key={idx} className="genre-badge">{genre}</span>
                           ))}
+                        </div>
+                      )}
+                      {item.anime_cards.description && (
+                        <div className="carousel-description">
+                          {item.anime_cards.description}
                         </div>
                       )}
                     </div>
@@ -1147,6 +1176,16 @@ export default function Home() {
           )}
         </div>
 
+        {/* Admin Panel Button */}
+        {isAdmin && (
+          <div className="admin-section">
+            <button className="admin-button" onClick={goToAdmin}>
+              <Lock size={18} />
+              Admin Panel
+            </button>
+          </div>
+        )}
+
         {/* Anime Cards */}
         <div className="cards-section">
           <div className="section-header">
@@ -1167,11 +1206,10 @@ export default function Home() {
                   <div className="card-image-wrapper">
                     <img className="card-image" src={anime.image_url} alt={anime.title} />
                     
-                    {/* Card Header with Views and Like */}
                     <div className="card-header">
                       <div className="card-views">
                         <Eye size={14} />
-                        <span>{views[anime.id] || 0}</span>
+                        <span>{allViews[anime.id] || 0}</span>
                       </div>
                       <button 
                         className={`card-like-btn ${favorites.includes(anime.id) ? 'liked' : ''}`}
@@ -1184,7 +1222,6 @@ export default function Home() {
                       </button>
                     </div>
                     
-                    {/* Card Overlay */}
                     <div className="card-overlay">
                       <div className="card-overlay-info">
                         <div className="card-overlay-meta">
@@ -1193,18 +1230,10 @@ export default function Home() {
                           </div>
                           <div className="card-episodes">{anime.episodes} qism</div>
                         </div>
-                        {anime.genres && anime.genres.length > 0 && (
-                          <div className="card-genres-overlay">
-                            {anime.genres.slice(0, 3).map((genre, idx) => (
-                              <span key={idx} className="genre-tag-small">{genre}</span>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
                   
-                  {/* Card Content */}
                   <div className="card-content">
                     <div className="card-title">{anime.title}</div>
                   </div>

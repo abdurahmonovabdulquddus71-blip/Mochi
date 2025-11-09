@@ -663,7 +663,7 @@ export default function AnimeDetail() {
           <div style={styles.statCard}>
             <div style={styles.statLabel}>Ko'rishlar</div>
             <div style={styles.statValue}>
-              <i className="fa-solid fa-eye" style={{ color: "#B197FC" }}></i> {views || 0}
+              <i className="fa-regular fa-eye"></i> {views || 0}
             </div>
           </div>
         </div>
