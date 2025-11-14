@@ -41,7 +41,10 @@ export default function AnimeDetail() {
   const [shareModal, setShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [randomAnimes, setRandomAnimes] = useState([]);
+  const [showPrerollAd, setShowPrerollAd] = useState(false);
+  const [adCountdown, setAdCountdown] = useState(3);
   const playerRef = useRef(null);
+  const prerollAdRef = useRef(null);
 
   useEffect(() => {
     checkCurrentUser();
@@ -55,14 +58,52 @@ export default function AnimeDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (videoUrl && anime) {
+    if (videoUrl && anime && !showPrerollAd) {
       const timer = setTimeout(() => {
         initializePlayer();
       }, 1000);
       
       return () => clearTimeout(timer);
     }
-  }, [videoUrl, anime]);
+  }, [videoUrl, anime, showPrerollAd]);
+
+  useEffect(() => {
+    if (showPrerollAd && adCountdown > 0) {
+      const timer = setTimeout(() => {
+        setAdCountdown(adCountdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (showPrerollAd && adCountdown === 0) {
+      handleSkipAd();
+    }
+  }, [showPrerollAd, adCountdown]);
+
+  useEffect(() => {
+    if (showPrerollAd && prerollAdRef.current && !prerollAdRef.current.hasChildNodes()) {
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.innerHTML = `
+        atOptions = {
+          'key' : '9611ac376b0e86e6d6e8e97d447bfffa',
+          'format' : 'iframe',
+          'height' : 250,
+          'width' : 300,
+          'params' : {}
+        };
+      `;
+      prerollAdRef.current.appendChild(script);
+
+      const invokeScript = document.createElement('script');
+      invokeScript.type = 'text/javascript';
+      invokeScript.src = '//www.highperformanceformat.com/9611ac376b0e86e6d6e8e97d447bfffa/invoke.js';
+      prerollAdRef.current.appendChild(invokeScript);
+    }
+  }, [showPrerollAd]);
+
+  const handleSkipAd = () => {
+    setShowPrerollAd(false);
+    setAdCountdown(3);
+  };
 
   const loadRandomAnimes = async () => {
     try {
@@ -259,6 +300,7 @@ export default function AnimeDetail() {
           const streamUrl = `/api/stream?fileName=${encodeURIComponent(firstVideoUrl)}`;
           console.log('🔗 Stream URL:', streamUrl);
           setVideoUrl(streamUrl);
+          setShowPrerollAd(true);
         }
       } else {
         setEpisodes([]);
@@ -302,14 +344,15 @@ export default function AnimeDetail() {
       const streamUrl = `/api/stream?fileName=${encodeURIComponent(episode.video_url)}`;
       console.log('🔄 Switching to:', streamUrl);
       setVideoUrl(streamUrl);
+      setShowPrerollAd(true);
+      setAdCountdown(3);
       
       if (playerRef.current) {
         try {
-          playerRef.current.switchUrl(streamUrl);
-          console.log('✅ URL switched');
+          playerRef.current.destroy();
+          playerRef.current = null;
         } catch (e) {
-          console.error('Switch URL error:', e);
-          setTimeout(initializePlayer, 100);
+          console.error('Destroy error:', e);
         }
       }
     }
@@ -455,7 +498,7 @@ export default function AnimeDetail() {
           margin: 0;
           padding: 0;
           -webkit-tap-highlight-color: transparent;
-        outline: none;
+          outline: none;
         }
 
         body {
@@ -503,8 +546,6 @@ export default function AnimeDetail() {
         .episode-btn {
           transition: all 0.3s ease;
         }
-
-
 
         video {
           width: 100%;
@@ -642,8 +683,6 @@ export default function AnimeDetail() {
           border: 2px solid transparent;
         }
 
-      
-
         .anime-card img {
           width: 100%;
           border-radius: 20px;
@@ -670,12 +709,89 @@ export default function AnimeDetail() {
           color: rgba(255, 255, 255, 0.6);
         }
 
+        .preroll-ad-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.95);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          animation: fadeIn 0.3s ease;
+        }
+
+        .preroll-ad-container {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+        }
+
+        .preroll-ad-content {
+          background: rgba(255, 255, 255, 0.05);
+          padding: 20px;
+          border-radius: 16px;
+          border: 2px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .preroll-skip-info {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 14px;
+          text-align: center;
+          margin-top: 15px;
+        }
+
+        .preroll-countdown {
+          font-size: 18px;
+          font-weight: 700;
+          color: #3b82f6;
+        }
+
         @media (max-width: 768px) {
           .random-grid-mobile {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
       `}</style>
+
+      {/* Preroll Ad Overlay */}
+      {showPrerollAd && (
+        <div className="preroll-ad-overlay">
+          <div className="preroll-ad-container">
+            <div className="preroll-ad-content" ref={prerollAdRef}>
+              {/* Ad will be injected here */}
+            </div>
+            <div className="preroll-skip-info">
+              {adCountdown > 0 ? (
+                <>
+                  Reklama <span className="preroll-countdown">{adCountdown}</span> soniyadan keyin o'tkazib yuboriladi...
+                </>
+              ) : (
+                <button
+                  style={{
+                    background: '#3b82f6',
+                    border: 'none',
+                    color: '#fff',
+                    padding: '12px 30px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    transition: 'all 0.3s',
+                  }}
+                  onClick={handleSkipAd}
+                >
+                  Davom etish
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share Modal */}
       {shareModal && (
@@ -806,7 +922,7 @@ export default function AnimeDetail() {
           </div>
         </div>
 
-               {/* Genres */}
+        {/* Genres */}
         {anime.genres && anime.genres.length > 0 && (
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>Janrlar</h3>
@@ -819,6 +935,14 @@ export default function AnimeDetail() {
             </div>
           </div>
         )}
+
+        {/* Native Banner Ad */}
+        <div style={styles.section}>
+          <div style={styles.nativeBannerAd}>
+            <script async="async" data-cfasync="false" src="//pl28049626.effectivegatecpm.com/ceb154996d37408eb3007a0a9cea06aa/invoke.js"></script>
+            <div id="container-ceb154996d37408eb3007a0a9cea06aa"></div>
+          </div>
+        </div>
 
         {/* Video Player Section */}
         {episodes.length > 0 && videoUrl ? (
@@ -833,7 +957,7 @@ export default function AnimeDetail() {
               <div className="video-wrapper">
                 <div id="artplayer-container" style={{ width: '100%' }}></div>
                 
-                {!playerRef.current && (
+                {!playerRef.current && !showPrerollAd && (
                   <video
                     key={videoUrl}
                     controls
@@ -880,8 +1004,8 @@ export default function AnimeDetail() {
           </div>
         ) : null}
 
-         {/* Description */}
-         {anime.description && (
+        {/* Description */}
+        {anime.description && (
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>Tavsif</h3>
             <p style={{
@@ -928,7 +1052,6 @@ export default function AnimeDetail() {
             </div>
           </div>
         )}
-
 
         {/* Comments Section */}
         <div style={styles.section}>
@@ -1090,6 +1213,17 @@ const styles = {
     fontSize: '20px',
     fontWeight: '700',
     marginBottom: '20px',
+  },
+  nativeBannerAd: {
+    background: 'rgba(255, 255, 255, 0.02)',
+    padding: '20px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    textAlign: 'center',
+    minHeight: '100px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   videoContainer: {
     marginBottom: '30px',
