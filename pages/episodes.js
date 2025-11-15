@@ -3,19 +3,15 @@ import { Film, Plus, Trash2, X, Upload, ArrowLeft, Loader, Edit, Play } from 'lu
 
 const SUPABASE_URL = 'https://itxndrvoolbvzdseuljx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0eG5kcnZvb2xidnpkc2V1bGp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzUyNjYsImV4cCI6MjA3MzcxMTI2Nn0.4x264DWr3QVjgPQYqf73QdAypfhKXvuVxw3LW9QYyGM';
-
 const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 
 export default function EpisodesManager() {
   const [modal, setModal] = useState({ show: false, type: '', message: '', title: '', onConfirm: null, data: null });
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [animeInfo, setAnimeInfo] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState('');
 
   const showModal = (type, message, onConfirm = null, title = '', data = null) => {
     setModal({ show: true, type, message, onConfirm, title, data });
@@ -79,133 +75,6 @@ export default function EpisodesManager() {
       showModal('error', 'Qismlarni yuklashda xato: ' + error.message);
     }
     setLoading(false);
-  };
-
-  // 🔒 SHA1 hash hisoblash
-  const calculateSHA1 = async (arrayBuffer) => {
-    const hashBuffer = await crypto.subtle.digest('SHA-1', arrayBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  };
-
-  // 📦 Chunked upload
-  const uploadVideoChunked = async (file, episodeNumber) => {
-    try {
-      setUploadStatus('Tayyorlanmoqda...');
-      setUploadProgress(5);
-
-      // 1. Upload credentials olish
-      const fileName = `anime_${animeInfo.id}_episode_${episodeNumber}_${Date.now()}.${file.name.split('.').pop()}`;
-      
-      const credResponse = await fetch('/api/get-upload-credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: fileName,
-          contentType: file.type,
-        }),
-      });
-
-      if (!credResponse.ok) {
-        throw new Error('Credentials olishda xato');
-      }
-
-      const credentials = await credResponse.json();
-      setUploadProgress(10);
-
-      // 2. Faylni bo'laklarga bo'lish
-      const chunks = [];
-      let offset = 0;
-      while (offset < file.size) {
-        chunks.push(file.slice(offset, offset + CHUNK_SIZE));
-        offset += CHUNK_SIZE;
-      }
-
-      const totalChunks = chunks.length;
-      setUploadStatus(`Fayl ${totalChunks} ta bo'lakga bo'lindi`);
-
-      // 3. Har bir chunkni yuklash
-      const partSha1Array = [];
-      let currentUploadUrl = credentials.uploadUrl;
-      let currentAuthToken = credentials.authToken;
-
-      for (let i = 0; i < chunks.length; i++) {
-        setUploadStatus(`Bo'lak ${i + 1}/${totalChunks} yuklanmoqda...`);
-
-        // Har 2-chunkdan keyin yangi upload URL olish
-        if (i > 0 && i % 2 === 0) {
-          const newUrlResponse = await fetch('/api/get-upload-part-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fileId: credentials.fileId,
-              apiUrl: credentials.apiUrl,
-              authToken: credentials.authorizationToken,
-            }),
-          });
-
-          if (newUrlResponse.ok) {
-            const newUrlData = await newUrlResponse.json();
-            currentUploadUrl = newUrlData.uploadUrl;
-            currentAuthToken = newUrlData.authToken;
-          }
-        }
-
-        // Chunk yuklash
-        const arrayBuffer = await chunks[i].arrayBuffer();
-        const sha1 = await calculateSHA1(arrayBuffer);
-
-        const uploadResponse = await fetch(currentUploadUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': currentAuthToken,
-            'X-Bz-Part-Number': (i + 1).toString(),
-            'Content-Length': chunks[i].size.toString(),
-            'X-Bz-Content-Sha1': sha1,
-          },
-          body: chunks[i],
-        });
-
-        if (!uploadResponse.ok) {
-          const error = await uploadResponse.text();
-          throw new Error(`Chunk ${i + 1} yuklashda xato: ${error}`);
-        }
-
-        const uploadData = await uploadResponse.json();
-        partSha1Array.push(uploadData.contentSha1);
-
-        const progress = 10 + ((i + 1) / totalChunks) * 70;
-        setUploadProgress(Math.round(progress));
-      }
-
-      // 4. Yuklashni yakunlash
-      setUploadStatus('Yuklash yakunlanmoqda...');
-      setUploadProgress(85);
-
-      const finishResponse = await fetch('/api/finish-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileId: credentials.fileId,
-          partSha1Array: partSha1Array,
-          apiUrl: credentials.apiUrl,
-          authToken: credentials.authorizationToken,
-        }),
-      });
-
-      if (!finishResponse.ok) {
-        throw new Error('Yuklashni yakunlashda xato');
-      }
-
-      const result = await finishResponse.json();
-      setUploadProgress(100);
-      setUploadStatus('Tayyor!');
-
-      return result.downloadUrl;
-    } catch (error) {
-      console.error('Upload error:', error);
-      throw error;
-    }
   };
 
   const handleAddEpisode = () => {
@@ -777,13 +646,6 @@ export default function EpisodesManager() {
           showModal={showModal}
           loadEpisodes={() => loadEpisodes(animeInfo.id)}
           animeInfo={animeInfo}
-          uploadProgress={uploadProgress}
-          setUploadProgress={setUploadProgress}
-          isUploading={isUploading}
-          setIsUploading={setIsUploading}
-          uploadVideoChunked={uploadVideoChunked}
-          uploadStatus={uploadStatus}
-          setUploadStatus={setUploadStatus}
           supabaseUrl={SUPABASE_URL}
           supabaseKey={SUPABASE_ANON_KEY}
         />
@@ -792,7 +654,7 @@ export default function EpisodesManager() {
   );
 }
 
-function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, uploadProgress, setUploadProgress, isUploading, setIsUploading, uploadVideoChunked, uploadStatus, setUploadStatus, supabaseUrl, supabaseKey }) {
+function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, supabaseUrl, supabaseKey }) {
   const [formData, setFormData] = useState({
     episode_number: '',
     title: '',
@@ -801,6 +663,9 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
     videoFile: null,
     video_url: ''
   });
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
 
   useEffect(() => {
     if (modal.type === 'form' && modal.data) {
@@ -814,6 +679,134 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
       });
     }
   }, [modal.type, modal.data]);
+
+  const calculateSHA1 = async (arrayBuffer) => {
+    const hashBuffer = await crypto.subtle.digest('SHA-1', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const uploadVideoChunked = async (file, episodeNumber) => {
+    try {
+      setUploadStatus('🔄 Tayyorlanmoqda...');
+      setUploadProgress(5);
+
+      const fileName = `anime_${animeInfo.id}_episode_${episodeNumber}_${Date.now()}.${file.name.split('.').pop()}`;
+      
+      // 1. Credentials olish
+      const credResponse = await fetch('/api/get-upload-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: fileName,
+          contentType: file.type,
+        }),
+      });
+
+      if (!credResponse.ok) {
+        const error = await credResponse.json();
+        throw new Error(error.error || 'Credentials olishda xato');
+      }
+
+      const credentials = await credResponse.json();
+      setUploadProgress(10);
+
+      // 2. Faylni bo'laklarga bo'lish
+      const CHUNK_SIZE = 20 * 1024 * 1024;
+      const chunks = [];
+      let offset = 0;
+      while (offset < file.size) {
+        chunks.push(file.slice(offset, offset + CHUNK_SIZE));
+        offset += CHUNK_SIZE;
+      }
+
+      const totalChunks = chunks.length;
+      setUploadStatus(`📦 Fayl ${totalChunks} ta bo'lakga bo'lindi (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+
+      // 3. Har bir chunkni yuklash
+      const partSha1Array = [];
+      let currentUploadUrl = credentials.uploadUrl;
+      let currentAuthToken = credentials.authToken;
+
+      for (let i = 0; i < chunks.length; i++) {
+        setUploadStatus(`📤 Bo'lak ${i + 1}/${totalChunks} yuklanmoqda...`);
+
+        // Har 2 chunkdan keyin yangi URL olish
+        if (i > 0 && i % 2 === 0) {
+          const newUrlResponse = await fetch('/api/get-upload-part-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileId: credentials.fileId,
+              apiUrl: credentials.apiUrl,
+              authToken: credentials.authorizationToken,
+            }),
+          });
+
+          if (newUrlResponse.ok) {
+            const newUrlData = await newUrlResponse.json();
+            currentUploadUrl = newUrlData.uploadUrl;
+            currentAuthToken = newUrlData.authToken;
+          }
+        }
+
+        // Chunk yuklash
+        const arrayBuffer = await chunks[i].arrayBuffer();
+        const sha1 = await calculateSHA1(arrayBuffer);
+
+        const uploadResponse = await fetch(currentUploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': currentAuthToken,
+            'X-Bz-Part-Number': (i + 1).toString(),
+            'Content-Length': chunks[i].size.toString(),
+            'X-Bz-Content-Sha1': sha1,
+          },
+          body: chunks[i],
+        });
+
+        if (!uploadResponse.ok) {
+          const error = await uploadResponse.text();
+          throw new Error(`Chunk ${i + 1} yuklashda xato: ${error}`);
+        }
+
+        const uploadData = await uploadResponse.json();
+        partSha1Array.push(uploadData.contentSha1);
+
+        const progress = 10 + ((i + 1) / totalChunks) * 70;
+        setUploadProgress(Math.round(progress));
+      }
+
+      // 4. Yuklashni yakunlash
+      setUploadStatus('🏁 Yuklash yakunlanmoqda...');
+      setUploadProgress(85);
+
+      const finishResponse = await fetch('/api/finish-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileId: credentials.fileId,
+          partSha1Array: partSha1Array,
+          apiUrl: credentials.apiUrl,
+          authToken: credentials.authorizationToken,
+        }),
+      });
+
+      if (!finishResponse.ok) {
+        const error = await finishResponse.json();
+        throw new Error(error.error || 'Yuklashni yakunlashda xato');
+      }
+
+      const result = await finishResponse.json();
+      setUploadProgress(100);
+      setUploadStatus('✅ Tayyor!');
+
+      return result.downloadUrl;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  };
 
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
@@ -907,7 +900,7 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2 className="modal-title">{modal.title}</h2>
-            <button className="modal-close" onClick={hideModal}>
+            <button className="modal-close" onClick={hideModal} disabled={isUploading}>
               <X size={20} />
             </button>
           </div>
@@ -965,7 +958,7 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
           <div className="form-group">
             <label className="form-label">
               <Upload size={16} style={{ display: 'inline', verticalAlign: 'middle' }} />
-              {' '}Video yuklash (Cheksiz hajm)
+              {' '}Video yuklash (Cheksiz hajm - 20MB bo'laklarda)
             </label>
             <label className="form-file-upload">
               <input type="file" accept="video/*" onChange={handleVideoChange} disabled={isUploading} />
