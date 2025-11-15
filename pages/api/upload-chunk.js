@@ -8,7 +8,7 @@ import fetch from "node-fetch";
 export const config = {
   api: {
     bodyParser: false,
-    responseLimit: "25mb",
+    responseLimit: "5mb",
   },
 };
 
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
   try {
     const form = formidable({ 
-      maxFileSize: 25 * 1024 * 1024,
+      maxFileSize: 5 * 1024 * 1024,
       uploadDir: "/tmp",
       keepExtensions: true,
     });
