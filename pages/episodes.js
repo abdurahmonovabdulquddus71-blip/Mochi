@@ -693,22 +693,22 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, su
 
       const fileName = `anime_${animeInfo.id}_episode_${episodeNumber}_${Date.now()}.${file.name.split('.').pop()}`;
       
-      // 1. Credentials olish
-      const credResponse = await fetch('/api/get-upload-credentials', {
+      // 1. Start chunked upload
+      const formData = new FormData();
+      formData.append('fileName', fileName);
+      formData.append('contentType', file.type);
+
+      const startResponse = await fetch('/api/start-chunked-upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: fileName,
-          contentType: file.type,
-        }),
+        body: formData,
       });
 
-      if (!credResponse.ok) {
-        const error = await credResponse.json();
-        throw new Error(error.error || 'Credentials olishda xato');
+      if (!startResponse.ok) {
+        const error = await startResponse.json();
+        throw new Error(error.error || 'Upload boshlanmadi');
       }
 
-      const credentials = await credResponse.json();
+      const startData = await startResponse.json();
       setUploadProgress(10);
 
       // 2. Faylni bo'laklarga bo'lish
@@ -725,53 +725,29 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, su
 
       // 3. Har bir chunkni yuklash
       const partSha1Array = [];
-      let currentUploadUrl = credentials.uploadUrl;
-      let currentAuthToken = credentials.authToken;
 
       for (let i = 0; i < chunks.length; i++) {
         setUploadStatus(`📤 Bo'lak ${i + 1}/${totalChunks} yuklanmoqda...`);
 
-        // Har 2 chunkdan keyin yangi URL olish
-        if (i > 0 && i % 2 === 0) {
-          const newUrlResponse = await fetch('/api/get-upload-part-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fileId: credentials.fileId,
-              apiUrl: credentials.apiUrl,
-              authToken: credentials.authorizationToken,
-            }),
-          });
+        const chunkFormData = new FormData();
+        chunkFormData.append('chunk', chunks[i], `chunk_${i + 1}.part`);
+        chunkFormData.append('fileId', startData.fileId);
+        chunkFormData.append('partNumber', (i + 1).toString());
+        chunkFormData.append('apiUrl', startData.apiUrl);
+        chunkFormData.append('authToken', startData.authToken);
 
-          if (newUrlResponse.ok) {
-            const newUrlData = await newUrlResponse.json();
-            currentUploadUrl = newUrlData.uploadUrl;
-            currentAuthToken = newUrlData.authToken;
-          }
-        }
-
-        // Chunk yuklash
-        const arrayBuffer = await chunks[i].arrayBuffer();
-        const sha1 = await calculateSHA1(arrayBuffer);
-
-        const uploadResponse = await fetch(currentUploadUrl, {
+        const chunkResponse = await fetch('/api/upload-chunk', {
           method: 'POST',
-          headers: {
-            'Authorization': currentAuthToken,
-            'X-Bz-Part-Number': (i + 1).toString(),
-            'Content-Length': chunks[i].size.toString(),
-            'X-Bz-Content-Sha1': sha1,
-          },
-          body: chunks[i],
+          body: chunkFormData,
         });
 
-        if (!uploadResponse.ok) {
-          const error = await uploadResponse.text();
-          throw new Error(`Chunk ${i + 1} yuklashda xato: ${error}`);
+        if (!chunkResponse.ok) {
+          const error = await chunkResponse.json();
+          throw new Error(error.error || `Chunk ${i + 1} yuklashda xato`);
         }
 
-        const uploadData = await uploadResponse.json();
-        partSha1Array.push(uploadData.contentSha1);
+        const chunkData = await chunkResponse.json();
+        partSha1Array.push(chunkData.contentSha1);
 
         const progress = 10 + ((i + 1) / totalChunks) * 70;
         setUploadProgress(Math.round(progress));
@@ -781,14 +757,14 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, su
       setUploadStatus('🏁 Yuklash yakunlanmoqda...');
       setUploadProgress(85);
 
-      const finishResponse = await fetch('/api/finish-upload', {
+      const finishResponse = await fetch('/api/finish-chunked-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fileId: credentials.fileId,
+          fileId: startData.fileId,
           partSha1Array: partSha1Array,
-          apiUrl: credentials.apiUrl,
-          authToken: credentials.authorizationToken,
+          apiUrl: startData.apiUrl,
+          authToken: startData.authToken,
         }),
       });
 
