@@ -693,26 +693,26 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, su
 
       const fileName = `anime_${animeInfo.id}_episode_${episodeNumber}_${Date.now()}.${file.name.split('.').pop()}`;
       
-      // 1. Start chunked upload
-      const formData = new FormData();
-      formData.append('fileName', fileName);
-      formData.append('contentType', file.type);
-
-      const startResponse = await fetch('/api/start-chunked-upload', {
+      // 1. Get B2 auth (faqat token olish - kichik so'rov)
+      const authResponse = await fetch('/api/get-b2-upload-auth', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: fileName,
+          contentType: file.type,
+        }),
       });
 
-      if (!startResponse.ok) {
-        const error = await startResponse.json();
-        throw new Error(error.error || 'Upload boshlanmadi');
+      if (!authResponse.ok) {
+        const error = await authResponse.json();
+        throw new Error(error.error || 'Auth olishda xato');
       }
 
-      const startData = await startResponse.json();
+      const authData = await authResponse.json();
       setUploadProgress(10);
 
-      // 2. Faylni bo'laklarga bo'lish (4MB chunks - Vercel hard limit 4.5MB)
-      const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB xavfsiz
+      // 2. Faylni bo'laklarga bo'lish (20MB - to'g'ridan B2 ga)
+      const CHUNK_SIZE = 20 * 1024 * 1024;
       const chunks = [];
       let offset = 0;
       while (offset < file.size) {
@@ -721,56 +721,81 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, su
       }
 
       const totalChunks = chunks.length;
-      setUploadStatus(`📦 Fayl ${totalChunks} ta bo'lakga bo'lindi (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+      setUploadStatus(`📦 ${totalChunks} ta bo'lak (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
-      // 3. Har bir chunkni yuklash
+      // 3. Har bir chunkni yuklash (to'g'ridan B2 ga)
       const partSha1Array = [];
 
       for (let i = 0; i < chunks.length; i++) {
-        setUploadStatus(`📤 Bo'lak ${i + 1}/${totalChunks} yuklanmoqda...`);
+        setUploadStatus(`📤 Bo'lak ${i + 1}/${totalChunks}...`);
 
-        const chunkFormData = new FormData();
-        chunkFormData.append('chunk', chunks[i], `chunk_${i + 1}.part`);
-        chunkFormData.append('fileId', startData.fileId);
-        chunkFormData.append('partNumber', (i + 1).toString());
-        chunkFormData.append('apiUrl', startData.apiUrl);
-        chunkFormData.append('authToken', startData.authToken);
-
-        const chunkResponse = await fetch('/api/upload-chunk', {
+        // Get upload URL for this part (har safar yangi URL)
+        const urlResponse = await fetch('/api/get-part-upload-url', {
           method: 'POST',
-          body: chunkFormData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileId: authData.fileId,
+            apiUrl: authData.apiUrl,
+            authToken: authData.authToken,
+          }),
         });
 
-        if (!chunkResponse.ok) {
-          const error = await chunkResponse.json();
-          throw new Error(error.error || `Chunk ${i + 1} yuklashda xato`);
+        if (!urlResponse.ok) {
+          const error = await urlResponse.json();
+          throw new Error(error.error || `Part ${i + 1} URL olishda xato`);
         }
 
-        const chunkData = await chunkResponse.json();
-        partSha1Array.push(chunkData.contentSha1);
+        const urlData = await urlResponse.json();
+
+        // SHA1 hisoblash
+        const arrayBuffer = await chunks[i].arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-1', arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const sha1 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Chunkni TO'G'RIDAN B2 GA yuklash (Vercel orqali emas!)
+        const uploadResponse = await fetch(urlData.uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': urlData.authToken,
+            'X-Bz-Part-Number': (i + 1).toString(),
+            'Content-Length': chunks[i].size.toString(),
+            'X-Bz-Content-Sha1': sha1,
+          },
+          body: chunks[i],
+        });
+
+        if (!uploadResponse.ok) {
+          const error = await uploadResponse.text();
+          throw new Error(`Chunk ${i + 1} yuklashda xato: ${error}`);
+        }
+
+        const uploadData = await uploadResponse.json();
+        partSha1Array.push(uploadData.contentSha1);
 
         const progress = 10 + ((i + 1) / totalChunks) * 70;
         setUploadProgress(Math.round(progress));
       }
 
-      // 4. Yuklashni yakunlash
-      setUploadStatus('🏁 Yuklash yakunlanmoqda...');
+      // 4. Finish upload
+      setUploadStatus('🏁 Yakunlanmoqda...');
       setUploadProgress(85);
 
-      const finishResponse = await fetch('/api/finish-chunked-upload', {
+      const finishResponse = await fetch('/api/finish-b2-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fileId: startData.fileId,
+          fileId: authData.fileId,
           partSha1Array: partSha1Array,
-          apiUrl: startData.apiUrl,
-          authToken: startData.authToken,
+          apiUrl: authData.apiUrl,
+          authToken: authData.authToken,
+          downloadUrl: authData.downloadUrl,
         }),
       });
 
       if (!finishResponse.ok) {
         const error = await finishResponse.json();
-        throw new Error(error.error || 'Yuklashni yakunlashda xato');
+        throw new Error(error.error || 'Yakunlashda xato');
       }
 
       const result = await finishResponse.json();
