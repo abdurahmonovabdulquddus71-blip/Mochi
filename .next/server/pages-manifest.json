@@ -4,5 +4,7 @@
   "/_document": "pages/_document.js",
   "/admin/admin": "pages/admin/admin.js",
   "/": "pages/index.js",
-  "/anime/[slug]": "pages/anime/[slug].js"
+  "/admin/episodes": "pages/admin/episodes.js",
+  "/anime/[slug]": "pages/anime/[slug].js",
+  "/api/stream": "pages/api/stream.js"
 }

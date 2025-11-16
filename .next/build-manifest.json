@@ -31,6 +31,16 @@
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/admin/admin.js"
+    ],
+    "/admin/episodes": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/admin/episodes.js"
+    ],
+    "/anime/[slug]": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/anime/[slug].js"
     ]
   },
   "ampFirstPages": []
