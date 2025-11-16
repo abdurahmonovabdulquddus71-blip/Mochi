@@ -79,23 +79,63 @@ export default function EpisodesManager() {
     setLoading(false);
   };
 
-  const uploadToBackend = async (file, episodeNumber) => {
-    const formData = new FormData();
-    formData.append('video', file);
-    formData.append('episode_number', episodeNumber);
-    formData.append('anime_id', animeInfo.id);
+  const uploadToWasabi = async (file, episodeNumber, onProgress) => {
+    try {
+      // 1. Generate presigned URL from backend
+      onProgress(10, "Wasabi bilan bog'lanmoqda...");
+      
+      const presignResponse = await fetch('/api/wasabi/presigned-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: `${animeInfo.id}/episode-${episodeNumber}-${Date.now()}.mp4`,
+          contentType: file.type
+        })
+      });
 
-    const response = await fetch('/api/upload-video', {
-      method: 'POST',
-      body: formData
-    });
+      if (!presignResponse.ok) {
+        throw new Error('Wasabi URL olishda xato');
+      }
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Video yuklashda xato');
+      const { uploadUrl, downloadUrl } = await presignResponse.json();
+
+      // 2. Upload file directly to Wasabi using presigned URL
+      onProgress(20, "Video Wasabi ga yuklanmoqda...");
+      
+      const xhr = new XMLHttpRequest();
+      
+      return new Promise((resolve, reject) => {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 60) + 20; // 20-80%
+            onProgress(percentComplete, "Video Wasabi ga yuklanmoqda...");
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 200) {
+            onProgress(80, "Yuklash tugadi!");
+            resolve({ downloadUrl });
+          } else {
+            reject(new Error('Video yuklashda xato'));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Tarmoq xatosi'));
+        });
+
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      });
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
     }
-
-    return await response.json();
   };
 
   const handleAddEpisode = () => {
@@ -147,7 +187,7 @@ export default function EpisodesManager() {
           margin: 0;
           padding: 0;
           -webkit-tap-highlight-color: transparent;
-        outline: none;
+          outline: none;
         }
 
         body {
@@ -671,7 +711,7 @@ export default function EpisodesManager() {
           setUploadProgress={setUploadProgress}
           isUploading={isUploading}
           setIsUploading={setIsUploading}
-          uploadToBackend={uploadToBackend}
+          uploadToWasabi={uploadToWasabi}
           supabaseUrl={SUPABASE_URL}
           supabaseKey={SUPABASE_ANON_KEY}
         />
@@ -680,7 +720,7 @@ export default function EpisodesManager() {
   );
 }
 
-function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, uploadProgress, setUploadProgress, isUploading, setIsUploading, uploadToBackend, supabaseUrl, supabaseKey }) {
+function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, uploadProgress, setUploadProgress, isUploading, setIsUploading, uploadToWasabi, supabaseUrl, supabaseKey }) {
   const [formData, setFormData] = useState({
     episode_number: '',
     title: '',
@@ -689,6 +729,7 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
     videoFile: null,
     video_url: ''
   });
+  const [progressMessage, setProgressMessage] = useState('');
 
   useEffect(() => {
     if (modal.type === 'form' && modal.data) {
@@ -706,8 +747,8 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 500 * 1024 * 1024) {
-        showModal('error', 'Video hajmi 500MB dan oshmasligi kerak!');
+      if (file.size > 2 * 1024 * 1024 * 1024) { // 2GB
+        showModal('error', 'Video hajmi 2GB dan oshmasligi kerak!');
         return;
       }
       setFormData({
@@ -730,17 +771,23 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
 
     setIsUploading(true);
     setUploadProgress(0);
+    setProgressMessage('Tayyorlanmoqda...');
 
     try {
-      setUploadProgress(10);
-      
       let videoUrl = formData.video_url;
 
       if (formData.videoFile) {
-        setUploadProgress(20);
-        const uploadResult = await uploadToBackend(formData.videoFile, formData.episode_number);
+        const uploadResult = await uploadToWasabi(
+          formData.videoFile, 
+          formData.episode_number,
+          (progress, message) => {
+            setUploadProgress(progress);
+            setProgressMessage(message);
+          }
+        );
         videoUrl = uploadResult.downloadUrl;
-        setUploadProgress(80);
+        setUploadProgress(85);
+        setProgressMessage("Ma'lumotlar saqlanmoqda...");
       }
 
       const episodeData = {
@@ -781,10 +828,12 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
       if (!response.ok) throw new Error('Ma\'lumotlarni saqlashda xato');
 
       setUploadProgress(100);
+      setProgressMessage("Tayyor!");
 
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
+        setProgressMessage('');
         hideModal();
         showModal('success', modal.data ? 'Qism muvaffaqiyatli tahrirlandi!' : 'Qism muvaffaqiyatli qo\'shildi!');
         loadEpisodes();
@@ -794,6 +843,7 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
       console.error('Error:', error);
       setIsUploading(false);
       setUploadProgress(0);
+      setProgressMessage('');
       showModal('error', 'Xato: ' + error.message);
     }
   };
@@ -862,7 +912,7 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
           <div className="form-group">
             <label className="form-label">
               <Upload size={16} style={{ display: 'inline', verticalAlign: 'middle' }} />
-              {' '}Video yuklash (Max 500MB)
+              {' '}Video yuklash (Max 2GB)
             </label>
             <label className="form-file-upload">
               <input type="file" accept="video/*" onChange={handleVideoChange} disabled={isUploading} />
@@ -883,10 +933,7 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
                 <div className="progress-bar-fill" style={{ width: `${uploadProgress}%` }}></div>
               </div>
               <div className="progress-status">
-                {uploadProgress < 20 && "Tayyorlanmoqda..."}
-                {uploadProgress >= 20 && uploadProgress < 80 && "Video Backblaze B2 ga yuklanmoqda..."}
-                {uploadProgress >= 80 && uploadProgress < 100 && "Ma'lumotlar saqlanmoqda..."}
-                {uploadProgress === 100 && "Tayyor!"}
+                {progressMessage}
               </div>
             </div>
           )}
