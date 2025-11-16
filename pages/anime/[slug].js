@@ -483,8 +483,16 @@ export default function AnimeDetail() {
   return (
     <div style={styles.container}>
       <Head>
+        <title>{anime.title}</title>
+        <meta 
+          name="description" 
+          content={anime.genres} 
+        />
+        <meta property="og:image" content={anime.image_url}></meta>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/artplayer/5.1.1/artplayer.css" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/artplayer/5.1.1/artplayer.js"></script>
+             <link rel="icon" href="/favicon.png" type="image/x-icon" />
+ 
       </Head>
 
       <style>{`
@@ -1122,7 +1130,7 @@ export default function AnimeDetail() {
                 <div
                   key={randomAnime.id}
                   className="anime-card"
-                  onClick={() => router.push(`/anime/${randomAnime.id}`)}
+                  onClick={() => router.push(`/anime/${anime.title}?id=${randomAnime.id}`)}
                 >
                   <img src={randomAnime.image_url} alt={randomAnime.title} />
                   <div className="anime-card-content">

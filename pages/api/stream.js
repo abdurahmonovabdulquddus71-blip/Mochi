@@ -4,20 +4,18 @@ import fetch from "node-fetch";
 const B2_KEY_ID = "005388ef1432aec000000000f";
 const B2_APPLICATION_KEY = "K005ChhVWS9ULMO2oxsQwcZzJCZw6tk";
 
-// 🚀 OPTIMALLASHTIRILGAN CHUNK SIZE
-// YouTube kabi tez yuklash uchun kichikroq qismlar
-const OPTIMAL_CHUNK_SIZE = 256 * 1024; // 256KB - tezkor boshlanish
-const MAX_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB - maksimal
+// 🚀 STREAMING OPTIMIZATSIYA
+// Katta chunk = tez stream (2MB - YouTube standart)
+const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+const INITIAL_CHUNK_SIZE = 512 * 1024; // 512KB - birinchi chunk tez yuklanish uchun
 
-// 🔐 B2 autentifikatsiya (cache bilan)
+// 🔐 B2 Auth Cache
 let cachedAuth = null;
 let authExpiry = 0;
 
 async function authenticateB2() {
-  // Cache'dan foydalanish - har safar auth qilmaslik
   const now = Date.now();
   if (cachedAuth && authExpiry > now) {
-    console.log("✅ Using cached B2 auth");
     return cachedAuth;
   }
 
@@ -29,33 +27,50 @@ async function authenticateB2() {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("❌ B2 auth error:", errorText);
     throw new Error("B2 autentifikatsiya xatosi");
   }
 
   const authData = await response.json();
-  
-  // 23 soat cache (token 24 soat amal qiladi)
   cachedAuth = authData;
-  authExpiry = now + (23 * 60 * 60 * 1000);
+  authExpiry = now + (23 * 60 * 60 * 1000); // 23 soat
   
-  console.log("✅ New B2 auth token obtained");
   return authData;
 }
 
-// 📹 ULTRA TEZ VIDEO STREAMING
+// 🎬 ULTRA TEZ VIDEO STREAMING
 export default async function handler(req, res) {
   const startTime = Date.now();
   
-  // 🚀 CORS headers - barcha brauzerlarga ruxsat
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // 🔒 FAQAT mochitv.uz dan ruxsat
+  const origin = req.headers.origin || req.headers.referer || '';
+  const allowedOrigins = [
+    'https://mochitv.uz',
+    'https://www.mochitv.uz',
+    'http://localhost:3000', // Development uchun
+    'http://localhost:5173'  // Vite dev server
+  ];
+  
+  const isAllowed = allowedOrigins.some(allowed => origin.includes(allowed.replace(/^https?:\/\//, '')));
+  
+  // CORS headers
+  if (isAllowed) {
+    const allowedOrigin = allowedOrigins.find(allowed => origin.includes(allowed.replace(/^https?:\/\//, '')));
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin || origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type, Authorization');
-  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length, Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  // 🚫 Origin tekshirish (OPTIONS dan tashqari)
+  if (!isAllowed && req.method !== 'OPTIONS') {
+    console.log('❌ Blocked origin:', origin);
+    return res.status(403).json({ error: 'Access denied - only mochitv.uz allowed' });
   }
 
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -65,99 +80,74 @@ export default async function handler(req, res) {
   try {
     const videoUrl = req.query.fileName;
 
-    if (!videoUrl) {
-      console.error("❌ fileName parametri yo'q");
-      return res.status(400).json({ error: "fileName parametri kerak" });
+    if (!videoUrl || !videoUrl.startsWith('https://')) {
+      return res.status(400).json({ error: "Invalid fileName parameter" });
     }
 
-    console.log("🎬 Video request:", videoUrl.substring(0, 80) + "...");
-
-    // URL validatsiya
-    if (!videoUrl.startsWith('https://')) {
-      console.error("❌ Noto'g'ri URL format");
-      return res.status(400).json({ error: "Video URL https:// bilan boshlanishi kerak" });
-    }
-
-    // 🔐 B2 autentifikatsiya (cached)
+    // 🔐 B2 auth
     const b2Auth = await authenticateB2();
 
-    // 📊 Video meta ma'lumotlarini olish (HEAD request - juda tez)
+    // 📊 Video metadata (HEAD request)
     const headResponse = await fetch(videoUrl, {
       method: "HEAD",
-      headers: {
-        Authorization: b2Auth.authorizationToken,
-      },
+      headers: { Authorization: b2Auth.authorizationToken },
     });
 
     if (!headResponse.ok) {
-      console.error("❌ Video topilmadi:", headResponse.status);
-      return res.status(404).json({ error: "Video topilmadi" });
+      return res.status(404).json({ error: "Video not found" });
     }
 
-    const contentLength = parseInt(headResponse.headers.get("content-length") || "0");
+    const fileSize = parseInt(headResponse.headers.get("content-length") || "0");
     const contentType = headResponse.headers.get("content-type") || "video/mp4";
-
-    console.log(`📊 Video: ${(contentLength / 1024 / 1024).toFixed(2)}MB (${contentType})`);
 
     // HEAD request uchun
     if (req.method === "HEAD") {
       res.writeHead(200, {
         "Content-Type": contentType,
-        "Content-Length": contentLength,
+        "Content-Length": fileSize,
         "Accept-Ranges": "bytes",
-        "Cache-Control": "public, max-age=31536000", // 1 yil cache
+        "Cache-Control": "public, max-age=86400", // 1 kun
       });
       return res.end();
     }
 
-    // 🎯 Range parsing - video playerlar uchun
+    // 🎯 RANGE HANDLING - brauzer nima so'rasa shuni berish
     const range = req.headers.range;
     let start = 0;
-    let end = contentLength - 1;
-    let statusCode = 200;
+    let end = fileSize - 1;
 
     if (range) {
-      // 📦 PARTIAL CONTENT - qismlar bo'lib yuklash
       const parts = range.replace(/bytes=/, "").split("-");
       start = parseInt(parts[0], 10);
       
-      // Agar end ko'rsatilgan bo'lsa
       if (parts[1]) {
+        // Brauzer aniq range so'ragan - berish kerak
         end = parseInt(parts[1], 10);
       } else {
-        // Aks holda optimal chunk size
-        end = Math.min(start + OPTIMAL_CHUNK_SIZE - 1, contentLength - 1);
+        // Brauzer faqat start bergan - oxirigacha yuborish (yoki katta chunk)
+        // Agar birinchi request bo'lsa - kichik chunk
+        if (start === 0) {
+          end = Math.min(start + INITIAL_CHUNK_SIZE - 1, fileSize - 1);
+        } else {
+          // Keyingi requestlar - katta chunk (tezroq)
+          end = Math.min(start + DEFAULT_CHUNK_SIZE - 1, fileSize - 1);
+        }
       }
-
-      // Validation
-      if (start >= contentLength) {
-        res.writeHead(416, {
-          "Content-Range": `bytes */${contentLength}`,
-        });
-        return res.end();
-      }
-
-      if (end >= contentLength) {
-        end = contentLength - 1;
-      }
-
-      if (start > end) {
-        return res.status(416).end();
-      }
-
-      statusCode = 206;
-      const chunkKB = ((end - start + 1) / 1024).toFixed(2);
-      console.log(`📦 Chunk: ${start}-${end} (${chunkKB}KB)`);
     } else {
-      // Range bo'lmasa ham kichik qism yuborish (tezroq boshlanish)
-      end = Math.min(OPTIMAL_CHUNK_SIZE - 1, contentLength - 1);
-      statusCode = 206;
-      console.log(`🚀 Initial chunk: 0-${end} (${(end / 1024).toFixed(2)}KB)`);
+      // Range yo'q - birinchi chunk yuborish
+      end = Math.min(INITIAL_CHUNK_SIZE - 1, fileSize - 1);
+    }
+
+    // Validation
+    if (start >= fileSize || start > end || end >= fileSize) {
+      res.writeHead(416, { "Content-Range": `bytes */${fileSize}` });
+      return res.end();
     }
 
     const chunkSize = end - start + 1;
+    console.log(`📦 Range: ${start}-${end}/${fileSize} (${(chunkSize/1024).toFixed(0)}KB)`);
 
-    // 🎬 B2 dan video qismini olish
+    // 🎬 B2 dan video chunk olish
     const videoResponse = await fetch(videoUrl, {
       method: "GET",
       headers: {
@@ -167,66 +157,54 @@ export default async function handler(req, res) {
     });
 
     if (!videoResponse.ok) {
-      console.error("❌ B2 stream error:", videoResponse.status);
-      return res.status(500).json({ error: "Video stream xatosi" });
+      return res.status(videoResponse.status).json({ error: "B2 stream error" });
     }
 
-    // 🚀 OPTIMAL RESPONSE HEADERS
-    const headers = {
+    // 🚀 RESPONSE HEADERS - Bunny.net style
+    const responseHeaders = {
       "Content-Type": contentType,
-      "Accept-Ranges": "bytes",
-      "Content-Range": `bytes ${start}-${end}/${contentLength}`,
       "Content-Length": chunkSize,
+      "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+      "Accept-Ranges": "bytes",
       
-      // Cache strategiyasi - tez yuklash uchun
+      // Aggressive caching - har bir chunk cache
       "Cache-Control": "public, max-age=31536000, immutable",
-      "ETag": `"${contentLength}-${start}-${end}"`,
+      "ETag": `"${fileSize}-${start}-${end}"`,
       
-      // Connection optimizatsiyasi
+      // Streaming optimizatsiya
       "Connection": "keep-alive",
-      "Keep-Alive": "timeout=5, max=100",
+      "Keep-Alive": "timeout=60, max=1000",
       
-      // Compression (agar kerak bo'lsa)
-      "Vary": "Accept-Encoding",
+      // Additional headers
+      "X-Content-Type-Options": "nosniff",
     };
 
-    res.writeHead(statusCode, headers);
+    res.writeHead(206, responseHeaders); // Always 206 for range requests
 
-    // 📺 STREAM QILISH - backpressure bilan
+    // 📺 STREAM - direct pipe (eng tez)
     if (videoResponse.body) {
-      let bytesStreamed = 0;
       const reader = videoResponse.body;
       
       for await (const chunk of reader) {
-        bytesStreamed += chunk.length;
-        
-        // Backpressure handling - buffer to'lsa kutish
+        // Backpressure handling
         if (!res.write(chunk)) {
           await new Promise(resolve => res.once('drain', resolve));
-        }
-        
-        // Progress log (har 100KB da)
-        if (bytesStreamed % (100 * 1024) < chunk.length) {
-          const progress = ((bytesStreamed / chunkSize) * 100).toFixed(1);
-          console.log(`⚡ Streaming: ${progress}%`);
         }
       }
       
       const duration = Date.now() - startTime;
-      const speed = (bytesStreamed / 1024 / (duration / 1000)).toFixed(2);
-      console.log(`✅ Stream complete: ${(bytesStreamed / 1024).toFixed(2)}KB in ${duration}ms (${speed}KB/s)`);
+      const speedMBps = (chunkSize / 1024 / 1024 / (duration / 1000)).toFixed(2);
+      console.log(`✅ ${(chunkSize/1024).toFixed(0)}KB in ${duration}ms (${speedMBps}MB/s)`);
     }
 
     res.end();
 
   } catch (error) {
-    console.error("❌ Stream error:", error);
+    console.error("❌ Error:", error.message);
     if (!res.headersSent) {
-      return res.status(500).json({ 
-        error: "Video streaming xatosi", 
-        details: error.message 
-      });
+      res.status(500).json({ error: "Streaming error" });
+    } else {
+      res.end();
     }
-    res.end();
   }
 }
