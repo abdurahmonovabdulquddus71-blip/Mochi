@@ -179,7 +179,7 @@ export default function AnimeDetail() {
         isLive: false,
         muted: false,
         autoplay: false,
-        pip: true,
+        pip: false,
         autoSize: false,
         autoMini: false,
         screenshot: true,
