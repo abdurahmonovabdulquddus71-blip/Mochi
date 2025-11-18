@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { ArrowLeft, Heart, Eye, Share2, Send, Play, X, Copy, Check } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
+import playerimg from "../../public/assets/player.png";
 
 const supabaseUrl = 'https://itxndrvoolbvzdseuljx.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0eG5kcnZvb2xidnpkc2V1bGp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzUyNjYsImV4cCI6MjA3MzcxMTI2Nn0.4x264DWr3QVjgPQYqf73QdAypfhKXvuVxw3LW9QYyGM';
@@ -173,7 +174,7 @@ export default function AnimeDetail() {
       const art = new window.Artplayer({
         container: container,
         url: videoUrl,
-        poster: '',
+        poster: {playerimg},
         type: 'mp4',
         volume: 0.5,
         isLive: false,
