@@ -42,10 +42,11 @@ export default function AnimeDetail() {
   const [copied, setCopied] = useState(false);
   const [randomAnimes, setRandomAnimes] = useState([]);
   const [showPrerollAd, setShowPrerollAd] = useState(false);
-  const [adCountdown, setAdCountdown] = useState(5);
+  const [adCountdown, setAdCountdown] = useState(7);
   const playerRef = useRef(null);
   const prerollAdRef = useRef(null);
   const nativeBannerRef = useRef(null);
+  const adLoadedRef = useRef(false);
 
   useEffect(() => {
     checkCurrentUser();
@@ -80,7 +81,12 @@ export default function AnimeDetail() {
   }, [showPrerollAd, adCountdown]);
 
   useEffect(() => {
-    if (showPrerollAd && prerollAdRef.current && !prerollAdRef.current.querySelector('script')) {
+    if (showPrerollAd && prerollAdRef.current && !adLoadedRef.current) {
+      adLoadedRef.current = true;
+      
+      // Clear previous content
+      prerollAdRef.current.innerHTML = '';
+      
       const script = document.createElement('script');
       script.type = 'text/javascript';
       script.innerHTML = `
@@ -117,7 +123,8 @@ export default function AnimeDetail() {
 
   const handleSkipAd = () => {
     setShowPrerollAd(false);
-    setAdCountdown(5);
+    setAdCountdown(7);
+    adLoadedRef.current = false;
   };
 
   const loadRandomAnimes = async () => {
@@ -283,17 +290,24 @@ export default function AnimeDetail() {
         .eq('id', id)
         .single();
 
-      if (error || !data) {
-        router.push('/');
+      if (error) {
+        console.error('Anime load error:', error);
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
+        console.error('Anime not found');
+        setLoading(false);
         return;
       }
 
       setAnime(data);
+      setLoading(false);
     } catch (error) {
       console.error('Anime yuklashda xato:', error);
-      router.push('/');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const loadEpisodes = async () => {
@@ -371,7 +385,8 @@ export default function AnimeDetail() {
       console.log('🔄 Switching to:', streamUrl);
       setVideoUrl(streamUrl);
       setShowPrerollAd(true);
-      setAdCountdown(5);
+      setAdCountdown(7);
+      adLoadedRef.current = false;
       
       if (playerRef.current) {
         try {
@@ -480,19 +495,60 @@ export default function AnimeDetail() {
     );
   }
 
+  // SEO optimized meta tags
+  const metaTitle = `${anime.title} Uzbek Tilida | To'liq Qismlar Bepul Onlayn`;
+  const metaDescription = `${anime.title} animesini uzbek tilida onlayn tomosha qiling. ${anime.genres ? anime.genres.join(', ') : 'Anime'} janri. Reyting: ${anime.rating || 'N/A'}. Barcha qismlar bepul.`;
+  const metaKeywords = `${anime.title}, ${anime.title} uzbek tilida, anime uzbek tilida, ${anime.genres ? anime.genres.join(', ') : ''}, anime onlayn, bepul anime`;
+
   return (
     <div style={styles.container}>
       <Head>
-        <title>{anime.title} Uzbek Tilida</title>
-        <meta 
-          name="description" 
-          content={anime.genres} 
-        />
-        <meta property="og:image" content={anime.image_url}></meta>
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={metaKeywords} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="video.tv_show" />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:image" content={anime.image_url} />
+        <meta property="og:url" content={typeof window !== 'undefined' ? window.location.href : ''} />
+        <meta property="og:site_name" content="Anime Uzbek" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={anime.image_url} />
+        
+        {/* Additional SEO */}
+        <meta name="robots" content="index, follow" />
+        <meta name="language" content="Uzbek" />
+        <meta name="author" content="Anime Uzbek" />
+        <link rel="canonical" href={typeof window !== 'undefined' ? window.location.href : ''} />
+        
+        {/* Artplayer */}
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/artplayer/5.1.1/artplayer.css" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/artplayer/5.1.1/artplayer.js"></script>
-             <link rel="icon" href="/favicon.png" type="image/x-icon" />
- 
+        <link rel="icon" href="/favicon.png" type="image/x-icon" />
+        
+        {/* JSON-LD Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "TVSeries",
+            "name": anime.title,
+            "description": anime.description || metaDescription,
+            "image": anime.image_url,
+            "genre": anime.genres || [],
+            "aggregateRating": anime.rating ? {
+              "@type": "AggregateRating",
+              "ratingValue": anime.rating,
+              "bestRating": "10"
+            } : undefined,
+            "numberOfEpisodes": anime.episodes || episodes.length
+          })}
+        </script>
       </Head>
 
       <style>{`
@@ -997,7 +1053,7 @@ export default function AnimeDetail() {
             <div style={styles.statLabel}>Qismlar</div>
             <div style={styles.statValue}>
               <Play size={18} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-              {anime.episodes || 0}
+              {anime.episodes || episodes.length || 0}
             </div>
           </div>
           
@@ -1130,7 +1186,7 @@ export default function AnimeDetail() {
                 <div
                   key={randomAnime.id}
                   className="anime-card"
-                  onClick={() => router.push(`/anime/${anime.title}?id=${randomAnime.id}`)}
+                  onClick={() => router.push(`/anime/${randomAnime.title}?id=${randomAnime.id}`)}
                 >
                   <img src={randomAnime.image_url} alt={randomAnime.title} />
                   <div className="anime-card-content">
