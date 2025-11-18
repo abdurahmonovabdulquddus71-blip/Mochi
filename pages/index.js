@@ -415,7 +415,7 @@ export default function Home() {
           align-items: center;
           gap: 15px;
           background: rgba(255, 255, 255, 0.05);
-          padding: 8px 15px;
+          padding: 8px 10px;
           border-radius: 8px;
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
