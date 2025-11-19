@@ -254,6 +254,8 @@ export default function AnimeDetail() {
         startVolume: 0.8,
       });
 
+      
+
       playerRef.current = player;
       console.log('✅ Player setup complete');
 
@@ -656,10 +658,7 @@ export default function AnimeDetail() {
           background: rgba(0, 0, 0, 0.8) !important;
         }
 
-        .mejs__button > button {
-          background-color: transparent !important;
-          background-image: none !important;
-        }
+       
 
         .episode-btn {
           transition: all 0.3s ease;
