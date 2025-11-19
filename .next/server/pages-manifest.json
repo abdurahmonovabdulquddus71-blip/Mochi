@@ -3,6 +3,8 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/anime/[slug]": "pages/anime/[slug].js",
-  "/api/stream": "pages/api/stream.js",
-  "/": "pages/index.js"
+  "/admin/admin": "pages/admin/admin.js",
+  "/api/upload-video": "pages/api/upload-video.js",
+  "/": "pages/index.js",
+  "/admin/episodes": "pages/admin/episodes.js"
 }

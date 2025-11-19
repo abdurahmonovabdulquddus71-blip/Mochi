@@ -797,7 +797,7 @@ export default function AnimeDetail() {
         .anime-card img {
           width: 100%;
           border-radius: 20px;
-          height: 200px;
+          height: 220px;
           object-fit: cover;
         }
 
