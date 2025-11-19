@@ -37,16 +37,18 @@ export default function AnimeDetail() {
   const [episodes, setEpisodes] = useState([]);
   const [currentEpisode, setCurrentEpisode] = useState(1);
   const [videoUrl, setVideoUrl] = useState('');
-  const [artplayer, setArtplayer] = useState(null);
   const [shareModal, setShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [randomAnimes, setRandomAnimes] = useState([]);
   const [showPrerollAd, setShowPrerollAd] = useState(false);
   const [adCountdown, setAdCountdown] = useState(7);
   const playerRef = useRef(null);
+  const videoRef = useRef(null);
+  const videoContainerRef = useRef(null);
   const prerollAdRef = useRef(null);
   const nativeBannerRef = useRef(null);
   const adLoadedRef = useRef(false);
+  const playerInitializedRef = useRef(false);
 
   useEffect(() => {
     checkCurrentUser();
@@ -61,9 +63,10 @@ export default function AnimeDetail() {
 
   useEffect(() => {
     if (videoUrl && anime && !showPrerollAd) {
+      playerInitializedRef.current = false;
       const timer = setTimeout(() => {
         initializePlayer();
-      }, 1000);
+      }, 500);
       
       return () => clearTimeout(timer);
     }
@@ -84,7 +87,6 @@ export default function AnimeDetail() {
     if (showPrerollAd && prerollAdRef.current && !adLoadedRef.current) {
       adLoadedRef.current = true;
       
-      // Clear previous content
       prerollAdRef.current.innerHTML = '';
       
       const script = document.createElement('script');
@@ -144,94 +146,120 @@ export default function AnimeDetail() {
     }
   };
 
-  const initializePlayer = () => {
+  const destroyPlayer = () => {
     if (playerRef.current) {
       try {
-        playerRef.current.destroy();
+        if (playerRef.current.pause) {
+          playerRef.current.pause();
+        }
+        if (playerRef.current.remove) {
+          playerRef.current.remove();
+        }
       } catch (e) {
-        console.log('Player destroy error:', e);
+        console.log('Player cleanup error:', e);
       }
       playerRef.current = null;
     }
 
-    const container = document.getElementById('artplayer-container');
-    
-    if (!container) {
-      console.error('❌ Container topilmadi');
+    if (videoContainerRef.current) {
+      const oldVideo = videoContainerRef.current.querySelector('video');
+      if (oldVideo) {
+        oldVideo.pause();
+        oldVideo.removeAttribute('src');
+        oldVideo.load();
+      }
+      
+      const playerElements = videoContainerRef.current.querySelectorAll('.mejs__container, .mejs__offscreen');
+      playerElements.forEach(el => {
+        try {
+          el.remove();
+        } catch (e) {
+          console.log('Element removal error:', e);
+        }
+      });
+    }
+
+    playerInitializedRef.current = false;
+  };
+
+  const initializePlayer = () => {
+    if (playerInitializedRef.current) {
+      console.log('Player already initialized, skipping');
       return;
     }
 
-    if (typeof window === 'undefined' || !window.Artplayer) {
-      console.error('❌ Artplayer kutubxonasi yuklanmagan');
+    destroyPlayer();
+
+    if (!videoContainerRef.current) {
+      console.error('❌ Video container not found');
+      return;
+    }
+
+    if (typeof window === 'undefined' || !window.MediaElementPlayer) {
+      console.error('❌ MediaElement.js not loaded yet');
       setTimeout(initializePlayer, 500);
       return;
     }
 
-    console.log('🎮 Initializing player with URL:', videoUrl);
+    videoContainerRef.current.innerHTML = `
+      <video
+        id="video-player-${Date.now()}"
+        width="100%"
+        height="500"
+        style="max-width: 100%;"
+        preload="metadata"
+      >
+        <source src="${videoUrl}" type="video/mp4" />
+      </video>
+    `;
+
+    const newVideoElement = videoContainerRef.current.querySelector('video');
+    if (!newVideoElement) {
+      console.error('❌ Video element not created');
+      return;
+    }
+
+    videoRef.current = newVideoElement;
+
+    console.log('🎮 Initializing MediaElement player');
 
     try {
-      const art = new window.Artplayer({
-        container: container,
-        url: videoUrl,
-        poster: "",
-        type: 'mp4',
-        volume: 0.5,
-        isLive: false,
-        muted: false,
-        autoplay: false,
-        pip: true,
-        autoSize: false,
-        autoMini: false,
-        screenshot: true,
-        setting: true,
-        loop: false,
-        flip: true,
-        playbackRate: true,
-        aspectRatio: true,
-        fullscreen: true,
-        fullscreenWeb: false,
-        subtitleOffset: true,
-        miniProgressBar: true,
-        mutex: true,
-        backdrop: true,
-        playsInline: true,
-        theme: '#3b82f6',
-        lang: 'en',
-        whitelist: ['*'],
-        moreVideoAttr: {
-          crossOrigin: 'anonymous',
+      const player = new window.MediaElementPlayer(newVideoElement, {
+        pluginPath: 'https://cdn.jsdelivr.net/npm/mediaelement@6.0.1/build/',
+        shimScriptAccess: 'always',
+        success: function(mediaElement, originalNode, instance) {
+          console.log('✅ Player initialized successfully');
+          playerInitializedRef.current = true;
+          
+          mediaElement.addEventListener('loadedmetadata', function() {
+            console.log('✅ Video metadata loaded');
+          });
+
+          mediaElement.addEventListener('error', function(e) {
+            console.error('❌ Video error:', e);
+          });
         },
+        error: function(media) {
+          console.error('❌ MediaElement error:', media);
+          playerInitializedRef.current = false;
+        },
+        features: ['playpause', 'current', 'progress', 'duration', 'volume', 'fullscreen'],
+        alwaysShowControls: true,
+        hideVideoControlsOnLoad: false,
+        enableAutosize: true,
+        stretching: 'responsive',
+        autoRewind: false,
+        enableKeyboard: true,
+        pauseOtherPlayers: true,
+        startVolume: 0.8,
       });
 
-      playerRef.current = art;
-      setArtplayer(art);
-      console.log('✅ Player initialized successfully');
-
-      art.on('ready', () => {
-        console.log('✅ Player ready');
-      });
-
-      art.on('fullscreen', (state) => {
-        console.log('Fullscreen state:', state);
-        if (state) {
-          if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape').catch(err => {
-              console.log('Orientation lock error:', err);
-            });
-          }
-        }
-      });
-
-      art.on('error', (error, instance) => {
-        console.error('❌ Player error:', error);
-      });
-
-      art.on('video:error', (error) => {
-        console.error('❌ Video error:', error);
-      });
+      playerRef.current = player;
+      console.log('✅ Player setup complete');
 
     } catch (error) {
       console.error('❌ Player initialization error:', error);
+      playerInitializedRef.current = false;
     }
   };
 
@@ -378,24 +406,19 @@ export default function AnimeDetail() {
   };
 
   const selectEpisode = (episode) => {
+    console.log('🔄 Switching to episode:', episode.episode_number);
+    
+    destroyPlayer();
+    
     setCurrentEpisode(episode.episode_number);
     
     if (episode.video_url) {
       const streamUrl = `/api/stream?fileName=${encodeURIComponent(episode.video_url)}`;
-      console.log('🔄 Switching to:', streamUrl);
+      console.log('🔗 New stream URL:', streamUrl);
       setVideoUrl(streamUrl);
       setShowPrerollAd(true);
       setAdCountdown(7);
       adLoadedRef.current = false;
-      
-      if (playerRef.current) {
-        try {
-          playerRef.current.destroy();
-          playerRef.current = null;
-        } catch (e) {
-          console.error('Destroy error:', e);
-        }
-      }
     }
   };
 
@@ -495,7 +518,6 @@ export default function AnimeDetail() {
     );
   }
 
-  // SEO optimized meta tags
   const metaTitle = `${anime.title} Uzbek Tilida | To'liq Qismlar Bepul Onlayn`;
   const metaDescription = `${anime.title} animesini uzbek tilida onlayn tomosha qiling. ${anime.genres ? anime.genres.join(', ') : 'Anime'} janri. Reyting: ${anime.rating || 'N/A'}. Barcha qismlar bepul.`;
   const metaKeywords = `${anime.title}, ${anime.title} uzbek tilida, anime uzbek tilida, ${anime.genres ? anime.genres.join(', ') : ''}, anime onlayn, bepul anime`;
@@ -507,7 +529,6 @@ export default function AnimeDetail() {
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={metaKeywords} />
         
-        {/* Open Graph / Facebook */}
         <meta property="og:type" content="video.tv_show" />
         <meta property="og:title" content={metaTitle} />
         <meta property="og:description" content={metaDescription} />
@@ -515,24 +536,21 @@ export default function AnimeDetail() {
         <meta property="og:url" content={typeof window !== 'undefined' ? window.location.href : ''} />
         <meta property="og:site_name" content="Anime Uzbek" />
         
-        {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={metaTitle} />
         <meta name="twitter:description" content={metaDescription} />
         <meta name="twitter:image" content={anime.image_url} />
         
-        {/* Additional SEO */}
         <meta name="robots" content="index, follow" />
         <meta name="language" content="Uzbek" />
         <meta name="author" content="Anime Uzbek" />
         <link rel="canonical" href={typeof window !== 'undefined' ? window.location.href : ''} />
         
-        {/* Artplayer */}
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/artplayer/5.1.1/artplayer.css" />
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/artplayer/5.1.1/artplayer.js"></script>
-        <link rel="icon" href="/favicon.png" type="image/x-icon" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mediaelement@4.2.16/build/mediaelementplayer.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/mediaelement@4.2.16/build/mediaelement-and-player.min.js"></script>
+    
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         
-        {/* JSON-LD Structured Data */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
@@ -629,8 +647,18 @@ export default function AnimeDetail() {
           border: 2px solid rgba(59, 130, 246, 0.3);
         }
 
-        .artplayer-app {
+        .mejs__container {
           border-radius: 12px;
+          background: #000;
+        }
+
+        .mejs__controls {
+          background: rgba(0, 0, 0, 0.8) !important;
+        }
+
+        .mejs__button > button {
+          background-color: transparent !important;
+          background-image: none !important;
         }
 
         .episode-btn {
@@ -644,54 +672,9 @@ export default function AnimeDetail() {
           outline: none;
         }
 
-        #artplayer-container {
-          width: 100%;
-          height: 500px;
-          background: #000;
-        }
-
-        .art-video-player video {
-          object-fit: contain !important;
-        }
-
-        .artplayer-fullscreen video,
-        .artplayer-fullscreen-web video {
-          object-fit: contain !important;
-          width: 100% !important;
-          height: 100% !important;
-        }
-
         @media (max-width: 768px) {
-          #artplayer-container {
-            height: 200px;
-          }
-          
-          .artplayer-fullscreen,
-          .artplayer-fullscreen-web {
-            width: 100vw !important;
-            height: 100vh !important;
-          }
-          
-          .artplayer-fullscreen video,
-          .artplayer-fullscreen-web video {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain !important;
-          }
-        }
-
-        @media screen and (orientation: landscape) and (max-width: 926px) {
-          .artplayer-fullscreen,
-          .artplayer-fullscreen-web {
-            width: 100vw !important;
-            height: 100vh !important;
-          }
-          
-          .artplayer-fullscreen video,
-          .artplayer-fullscreen-web video {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain !important;
+          .video-wrapper {
+            height: auto;
           }
         }
 
@@ -909,12 +892,10 @@ export default function AnimeDetail() {
         }
       `}</style>
 
-      {/* Preroll Ad Overlay */}
       {showPrerollAd && (
         <div className="preroll-ad-overlay">
           <div className="preroll-ad-container">
             <div className="preroll-ad-content" ref={prerollAdRef}>
-              {/* Ad will be injected here */}
             </div>
             <div className="preroll-skip-info">
               {adCountdown > 0 ? (
@@ -947,7 +928,6 @@ export default function AnimeDetail() {
         </div>
       )}
 
-      {/* Share Modal */}
       {shareModal && (
         <div className="share-modal-overlay" onClick={() => setShareModal(false)}>
           <div className="share-modal" onClick={(e) => e.stopPropagation()}>
@@ -1007,21 +987,17 @@ export default function AnimeDetail() {
         </div>
       )}
 
-      {/* Back Button */}
       <button style={styles.backBtn} onClick={() => router.push('/')}>
         <ArrowLeft size={20} />
         Orqaga
       </button>
 
-      {/* Hero Section */}
       <div style={styles.heroSection}>
         <img src={anime.image_url} alt={anime.title} style={styles.heroImage} />
         <div style={styles.heroOverlay}></div>
       </div>
 
-      {/* Content */}
       <div style={styles.content}>
-        {/* Title & Actions */}
         <div style={styles.titleSection}>
           <h1 style={styles.title}>{anime.title}</h1>
           
@@ -1047,7 +1023,6 @@ export default function AnimeDetail() {
           </div>
         </div>
 
-        {/* Stats Grid */}
         <div style={styles.statsGrid}>
           <div style={styles.statCard}>
             <div style={styles.statLabel}>Qismlar</div>
@@ -1076,7 +1051,6 @@ export default function AnimeDetail() {
           </div>
         </div>
 
-        {/* Genres */}
         {anime.genres && anime.genres.length > 0 && (
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>Janrlar</h3>
@@ -1090,7 +1064,6 @@ export default function AnimeDetail() {
           </div>
         )}
 
-        {/* Video Player Section */}
         {episodes.length > 0 && videoUrl ? (
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>
@@ -1098,30 +1071,14 @@ export default function AnimeDetail() {
               {currentEpisode}-qism
             </h3>
 
-            {/* Native Banner Ad - Above Player */}
             <div style={styles.nativeBannerAd} ref={nativeBannerRef}>
-              {/* Ad will be injected here */}
             </div>
             
-            {/* Video Player */}
             <div style={styles.videoContainer}>
-              <div className="video-wrapper">
-                <div id="artplayer-container" style={{ width: '100%' }}></div>
-                
-                {!playerRef.current && !showPrerollAd && (
-                  <video
-                    key={videoUrl}
-                    controls
-                    style={{ width: '100%', height: '500px', background: '#000' }}
-                  >
-                    <source src={videoUrl} type="video/mp4" />
-                    Brauzeringiz video playbackni qo'llab-quvvatlamaydi.
-                  </video>
-                )}
+              <div className="video-wrapper" ref={videoContainerRef}>
               </div>
             </div>
 
-            {/* Episodes Grid */}
             <div style={styles.episodesSection}>
               <h4 style={styles.episodesTitle}>Barcha qismlar</h4>
               <div style={styles.episodesGrid}>
@@ -1155,7 +1112,6 @@ export default function AnimeDetail() {
           </div>
         ) : null}
 
-        {/* Description */}
         {anime.description && (
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>Tavsif</h3>
@@ -1177,7 +1133,6 @@ export default function AnimeDetail() {
           </div>
         )}
 
-        {/* Random Animes Section */}
         {randomAnimes.length > 0 && (
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>Boshqa animelar</h3>
@@ -1204,7 +1159,6 @@ export default function AnimeDetail() {
           </div>
         )}
 
-        {/* Comments Section */}
         <div style={styles.section}>
           <h3 style={styles.sectionTitle}>Izohlar ({comments.length})</h3>
           
@@ -1225,7 +1179,6 @@ export default function AnimeDetail() {
             <p style={styles.loginPrompt}>Izoh qoldirish uchun <strong>tizimga kiring</strong></p>
           )}
 
-          {/* Comments List */}
           <div style={styles.commentsList}>
             {comments.length === 0 ? (
               <p style={styles.noComments}>Hozircha izohlar yo'q</p>

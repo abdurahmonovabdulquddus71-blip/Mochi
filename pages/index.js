@@ -331,7 +331,7 @@ export default function Home() {
           name="description" 
           content="Har kuni yangi qisqa animelar, zavqli hikoyalar va quvnoq lahzalar seni MochiTVda kutmoqda!" 
         />
-     <link rel="icon" href="/favicon.png" type="image/x-icon" />
+     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
       </Head>
       <div id="ad-container" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 9999, background: 'rgba(0, 0, 0, 0.95)', borderTop: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 0' }}>
         {/* Adsterra reklama shu yerda chiqadi */}
