@@ -1349,7 +1349,7 @@ const styles = {
   episodeBtn: {
     background: 'rgba(255, 255, 255, 0.05)',
     border: '2px solid rgba(255, 255, 255, 0.2)',
-    padding: '10px 12px',
+    padding: '10px 9px',
     borderRadius: '12px',
     cursor: 'pointer',
     textAlign: 'center',
