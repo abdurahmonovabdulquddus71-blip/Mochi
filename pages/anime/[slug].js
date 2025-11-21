@@ -66,7 +66,7 @@ export default function AnimeDetail() {
       playerInitializedRef.current = false;
       const timer = setTimeout(() => {
         initializePlayer();
-      }, 500);
+      }, 300);
       
       return () => clearTimeout(timer);
     }
@@ -125,7 +125,7 @@ export default function AnimeDetail() {
 
   const handleSkipAd = () => {
     setShowPrerollAd(false);
-    setAdCountdown(7);
+    setAdCountdown(4);
     adLoadedRef.current = false;
   };
 
@@ -156,7 +156,7 @@ export default function AnimeDetail() {
           playerRef.current.remove();
         }
       } catch (e) {
-        console.log('Player cleanup error:', e);
+        console.log('Player cleanup:', e);
       }
       playerRef.current = null;
     }
@@ -173,9 +173,7 @@ export default function AnimeDetail() {
       playerElements.forEach(el => {
         try {
           el.remove();
-        } catch (e) {
-          console.log('Element removal error:', e);
-        }
+        } catch (e) {}
       });
     }
 
@@ -184,20 +182,13 @@ export default function AnimeDetail() {
 
   const initializePlayer = () => {
     if (playerInitializedRef.current) {
-      console.log('Player already initialized, skipping');
       return;
     }
 
     destroyPlayer();
 
-    if (!videoContainerRef.current) {
-      console.error('❌ Video container not found');
-      return;
-    }
-
-    if (typeof window === 'undefined' || !window.MediaElementPlayer) {
-      console.error('❌ MediaElement.js not loaded yet');
-      setTimeout(initializePlayer, 500);
+    if (!videoContainerRef.current || typeof window === 'undefined' || !window.MediaElementPlayer) {
+      setTimeout(initializePlayer, 300);
       return;
     }
 
@@ -205,9 +196,11 @@ export default function AnimeDetail() {
       <video
         id="video-player-${Date.now()}"
         width="100%"
-        height="500"
-        style="max-width: 100%;"
+        height="100%"
+        style="max-width: 100%; display: block;"
         preload="metadata"
+        playsinline
+        webkit-playsinline
       >
         <source src="${videoUrl}" type="video/mp4" />
       </video>
@@ -215,32 +208,33 @@ export default function AnimeDetail() {
 
     const newVideoElement = videoContainerRef.current.querySelector('video');
     if (!newVideoElement) {
-      console.error('❌ Video element not created');
       return;
     }
 
     videoRef.current = newVideoElement;
 
-    console.log('🎮 Initializing MediaElement player');
-
     try {
       const player = new window.MediaElementPlayer(newVideoElement, {
-        pluginPath: 'https://cdn.jsdelivr.net/npm/mediaelement@6.0.1/build/',
+        pluginPath: 'https://cdn.jsdelivr.net/npm/mediaelement@4.2.16/build/',
         shimScriptAccess: 'always',
         success: function(mediaElement, originalNode, instance) {
-          console.log('✅ Player initialized successfully');
           playerInitializedRef.current = true;
           
           mediaElement.addEventListener('loadedmetadata', function() {
-            console.log('✅ Video metadata loaded');
+            console.log('Video loaded');
           });
 
-          mediaElement.addEventListener('error', function(e) {
-            console.error('❌ Video error:', e);
-          });
+          const container = instance.getElement(instance.container);
+          if (container) {
+            container.style.width = '100%';
+            container.style.height = 'auto';
+            container.style.maxWidth = '100%';
+          }
+
+          mediaElement.addEventListener('fullscreenchange', handleFullscreenChange);
+          mediaElement.addEventListener('webkitfullscreenchange', handleFullscreenChange);
         },
         error: function(media) {
-          console.error('❌ MediaElement error:', media);
           playerInitializedRef.current = false;
         },
         features: ['playpause', 'current', 'progress', 'duration', 'volume', 'fullscreen'],
@@ -254,14 +248,23 @@ export default function AnimeDetail() {
         startVolume: 0.8,
       });
 
-      
-
       playerRef.current = player;
-      console.log('✅ Player setup complete');
 
     } catch (error) {
-      console.error('❌ Player initialization error:', error);
+      console.error('Player error:', error);
       playerInitializedRef.current = false;
+    }
+  };
+
+  const handleFullscreenChange = () => {
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    
+    if (isFullscreen && window.innerWidth < 768) {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(err => {
+          console.log('Orientation lock failed:', err);
+        });
+      }
     }
   };
 
@@ -320,14 +323,7 @@ export default function AnimeDetail() {
         .eq('id', id)
         .single();
 
-      if (error) {
-        console.error('Anime load error:', error);
-        setLoading(false);
-        return;
-      }
-
-      if (!data) {
-        console.error('Anime not found');
+      if (error || !data) {
         setLoading(false);
         return;
       }
@@ -335,7 +331,7 @@ export default function AnimeDetail() {
       setAnime(data);
       setLoading(false);
     } catch (error) {
-      console.error('Anime yuklashda xato:', error);
+      console.error('Anime load error:', error);
       setLoading(false);
     }
   };
@@ -349,26 +345,17 @@ export default function AnimeDetail() {
         .order('episode_number', { ascending: true});
 
       if (error) {
-        if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-          console.log('anime_episodes jadvali topilmadi.');
-          setEpisodes([]);
-          return;
-        }
-        console.error('Qismlar yuklashda xato:', error);
         setEpisodes([]);
         return;
       }
 
       if (data && data.length > 0) {
-        console.log('📹 Episodes loaded:', data);
         setEpisodes(data);
         setCurrentEpisode(data[0].episode_number);
         
         const firstVideoUrl = data[0].video_url;
-        console.log('🎬 First video URL:', firstVideoUrl);
         if (firstVideoUrl) {
           const streamUrl = `/api/stream?fileName=${encodeURIComponent(firstVideoUrl)}`;
-          console.log('🔗 Stream URL:', streamUrl);
           setVideoUrl(streamUrl);
           setShowPrerollAd(true);
         }
@@ -376,7 +363,7 @@ export default function AnimeDetail() {
         setEpisodes([]);
       }
     } catch (error) {
-      console.error('Qismlar yuklashda xato:', error);
+      console.error('Episodes load error:', error);
       setEpisodes([]);
     }
   };
@@ -390,36 +377,27 @@ export default function AnimeDetail() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
-          console.log('anime_comments jadvali topilmadi.');
-          setComments([]);
-          return;
-        }
-        console.error('Kommentlar yuklashda xato:', error);
         setComments([]);
         return;
       }
 
       setComments(data || []);
     } catch (error) {
-      console.error('Kommentlar yuklashda xato:', error);
+      console.error('Comments load error:', error);
       setComments([]);
     }
   };
 
   const selectEpisode = (episode) => {
-    console.log('🔄 Switching to episode:', episode.episode_number);
-    
     destroyPlayer();
     
     setCurrentEpisode(episode.episode_number);
     
     if (episode.video_url) {
       const streamUrl = `/api/stream?fileName=${encodeURIComponent(episode.video_url)}`;
-      console.log('🔗 New stream URL:', streamUrl);
       setVideoUrl(streamUrl);
       setShowPrerollAd(true);
-      setAdCountdown(7);
+      setAdCountdown(4);
       adLoadedRef.current = false;
     }
   };
@@ -479,7 +457,7 @@ export default function AnimeDetail() {
         loadComments();
       }
     } catch (error) {
-      console.error('Komment qo\'shishda xato:', error);
+      console.error('Comment error:', error);
     }
   };
 
@@ -548,8 +526,8 @@ export default function AnimeDetail() {
         <meta name="author" content="Anime Uzbek" />
         <link rel="canonical" href={typeof window !== 'undefined' ? window.location.href : ''} />
         
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mediaelement@4.2.16/build/mediaelementplayer.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/mediaelement@4.2.16/build/mediaelement-and-player.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mediaelement@4.2.16/build/mediaelementplayer.min.css" />
+        <script src="https://cdn.jsdelivr.net/npm/mediaelement@4.2.16/build/mediaelement-and-player.min.js"></script>
     
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         
@@ -643,25 +621,44 @@ export default function AnimeDetail() {
         .video-wrapper {
           position: relative;
           width: 100%;
+          padding-top: 56.25%;
           background: #000;
           border-radius: 12px;
           overflow: hidden;
           border: 2px solid rgba(59, 130, 246, 0.3);
         }
 
+        .video-wrapper > div {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
         .mejs__container {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
           border-radius: 12px;
           background: #000;
+        }
+
+        .mejs__container video {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: contain;
         }
 
         .mejs__controls {
           background: rgba(0, 0, 0, 0.8) !important;
         }
 
-       
-
-        .episode-btn {
-          transition: all 0.3s ease;
+        .mejs__layer {
+          width: 100% !important;
+          height: 100% !important;
         }
 
         video {
@@ -671,9 +668,30 @@ export default function AnimeDetail() {
           outline: none;
         }
 
+        video:fullscreen {
+          width: 100vw !important;
+          height: 100vh !important;
+          object-fit: contain !important;
+        }
+
+        video:-webkit-full-screen {
+          width: 100vw !important;
+          height: 100vh !important;
+          object-fit: contain !important;
+        }
+
+        .episode-btn {
+          transition: all 0.3s ease;
+        }
+
         @media (max-width: 768px) {
           .video-wrapper {
-            height: auto;
+            padding-top: 56.25%;
+            border-radius: 8px;
+          }
+
+          .mejs__container {
+            border-radius: 8px;
           }
         }
 
@@ -904,7 +922,7 @@ export default function AnimeDetail() {
               ) : (
                 <button
                   style={{
-                    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                    background: 'linear-gradient(135deg, #3b82f6,#2563eb)',
                     border: 'none',
                     color: '#fff',
                     padding: '14px 35px',
@@ -1074,7 +1092,8 @@ export default function AnimeDetail() {
             </div>
             
             <div style={styles.videoContainer}>
-              <div className="video-wrapper" ref={videoContainerRef}>
+              <div className="video-wrapper">
+                <div ref={videoContainerRef}></div>
               </div>
             </div>
 
