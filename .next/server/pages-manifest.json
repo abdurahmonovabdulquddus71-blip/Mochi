@@ -2,7 +2,6 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/anime/[slug]": "pages/anime/[slug].js",
-  "/": "pages/index.js",
-  "/api/stream": "pages/api/stream.js"
+  "/api/stream": "pages/api/stream.js",
+  "/anime/[slug]": "pages/anime/[slug].js"
 }

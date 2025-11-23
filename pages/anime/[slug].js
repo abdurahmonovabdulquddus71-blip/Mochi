@@ -50,6 +50,8 @@ export default function AnimeDetail() {
   const adLoadedRef = useRef(false);
   const playerInitializedRef = useRef(false);
   const adScriptLoadedRef = useRef(false);
+  const controlsTimeoutRef = useRef(null);
+  const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
     checkCurrentUser();
@@ -169,6 +171,10 @@ export default function AnimeDetail() {
   };
 
   const destroyPlayer = () => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    
     if (playerRef.current) {
       try {
         if (playerRef.current.pause) {
@@ -253,6 +259,52 @@ export default function AnimeDetail() {
             container.style.maxWidth = '100%';
           }
 
+          const controlsElement = container.querySelector('.mejs__controls');
+          if (controlsElement) {
+            controlsElement.style.opacity = '1';
+            controlsElement.style.transition = 'opacity 0.3s ease';
+          }
+
+          const hideControls = () => {
+            if (controlsElement && !mediaElement.paused) {
+              controlsElement.style.opacity = '0';
+              setShowControls(false);
+            }
+          };
+
+          const showControlsTemporarily = () => {
+            if (controlsElement) {
+              controlsElement.style.opacity = '1';
+              setShowControls(true);
+              
+              if (controlsTimeoutRef.current) {
+                clearTimeout(controlsTimeoutRef.current);
+              }
+              
+              if (!mediaElement.paused) {
+                controlsTimeoutRef.current = setTimeout(hideControls, 4000);
+              }
+            }
+          };
+
+          mediaElement.addEventListener('play', () => {
+            showControlsTemporarily();
+          });
+
+          mediaElement.addEventListener('pause', () => {
+            if (controlsElement) {
+              controlsElement.style.opacity = '1';
+              setShowControls(true);
+            }
+            if (controlsTimeoutRef.current) {
+              clearTimeout(controlsTimeoutRef.current);
+            }
+          });
+
+          container.addEventListener('mousemove', showControlsTemporarily);
+          container.addEventListener('touchstart', showControlsTemporarily);
+          container.addEventListener('click', showControlsTemporarily);
+
           mediaElement.addEventListener('fullscreenchange', handleFullscreenChange);
           mediaElement.addEventListener('webkitfullscreenchange', handleFullscreenChange);
           document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -262,7 +314,7 @@ export default function AnimeDetail() {
           playerInitializedRef.current = false;
         },
         features: ['playpause', 'current', 'progress', 'duration', 'volume', 'fullscreen'],
-        alwaysShowControls: true,
+        alwaysShowControls: false,
         hideVideoControlsOnLoad: false,
         enableAutosize: true,
         stretching: 'responsive',
@@ -696,7 +748,12 @@ export default function AnimeDetail() {
         }
 
         .mejs__controls {
-          background: rgba(0, 0, 0, 0.8) !important;
+          opacity: 1 !important;
+          transition: opacity 0.3s ease !important;
+        }
+
+        .mejs__controls.mejs-hidden {
+          opacity: 0 !important;
         }
 
         .mejs__layer {
