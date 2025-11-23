@@ -268,6 +268,7 @@ export default function AnimeDetail() {
           const hideControls = () => {
             if (controlsElement && !mediaElement.paused) {
               controlsElement.style.opacity = '0';
+              controlsElement.style.pointerEvents = 'none';
               setShowControls(false);
             }
           };
@@ -275,6 +276,7 @@ export default function AnimeDetail() {
           const showControlsTemporarily = () => {
             if (controlsElement) {
               controlsElement.style.opacity = '1';
+              controlsElement.style.pointerEvents = 'auto';
               setShowControls(true);
               
               if (controlsTimeoutRef.current) {
@@ -294,6 +296,7 @@ export default function AnimeDetail() {
           mediaElement.addEventListener('pause', () => {
             if (controlsElement) {
               controlsElement.style.opacity = '1';
+              controlsElement.style.pointerEvents = 'auto';
               setShowControls(true);
             }
             if (controlsTimeoutRef.current) {
@@ -301,8 +304,18 @@ export default function AnimeDetail() {
             }
           });
 
-          container.addEventListener('mousemove', showControlsTemporarily);
+          mediaElement.addEventListener('playing', () => {
+            showControlsTemporarily();
+          });
+
+          container.addEventListener('mousemove', () => {
+            if (window.innerWidth >= 768) {
+              showControlsTemporarily();
+            }
+          });
+
           container.addEventListener('touchstart', showControlsTemporarily);
+          container.addEventListener('touchmove', showControlsTemporarily);
           container.addEventListener('click', showControlsTemporarily);
 
           mediaElement.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -750,10 +763,19 @@ export default function AnimeDetail() {
         .mejs__controls {
           opacity: 1 !important;
           transition: opacity 0.3s ease !important;
+          pointer-events: auto !important;
         }
 
         .mejs__controls.mejs-hidden {
           opacity: 0 !important;
+          pointer-events: none !important;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+          .video-wrapper:hover .mejs__controls {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+          }
         }
 
         .mejs__layer {
