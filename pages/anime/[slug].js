@@ -49,6 +49,7 @@ export default function AnimeDetail() {
   const nativeBannerRef = useRef(null);
   const adLoadedRef = useRef(false);
   const playerInitializedRef = useRef(false);
+  const adScriptLoadedRef = useRef(false);
 
   useEffect(() => {
     checkCurrentUser();
@@ -89,6 +90,15 @@ export default function AnimeDetail() {
       
       prerollAdRef.current.innerHTML = '';
       
+      const adLoadTimeout = setTimeout(() => {
+        if (prerollAdRef.current && prerollAdRef.current.children.length === 0) {
+          const fallbackDiv = document.createElement('div');
+          fallbackDiv.style.cssText = 'width: 100%; height: 250px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); font-size: 14px;';
+          fallbackDiv.innerHTML = 'Reklama yuklanmoqda...';
+          prerollAdRef.current.appendChild(fallbackDiv);
+        }
+      }, 2000);
+
       const script = document.createElement('script');
       script.type = 'text/javascript';
       script.innerHTML = `
@@ -105,16 +115,28 @@ export default function AnimeDetail() {
       const invokeScript = document.createElement('script');
       invokeScript.type = 'text/javascript';
       invokeScript.src = '//www.highperformanceformat.com/9611ac376b0e86e6d6e8e97d447bfffa/invoke.js';
+      invokeScript.async = true;
+      invokeScript.onerror = () => {
+        console.log('Ad script failed to load');
+        clearTimeout(adLoadTimeout);
+      };
       prerollAdRef.current.appendChild(invokeScript);
+
+      return () => clearTimeout(adLoadTimeout);
     }
   }, [showPrerollAd]);
 
   useEffect(() => {
-    if (nativeBannerRef.current && !nativeBannerRef.current.querySelector('script')) {
+    if (nativeBannerRef.current && !adScriptLoadedRef.current) {
+      adScriptLoadedRef.current = true;
+      
       const script = document.createElement('script');
       script.async = true;
       script.setAttribute('data-cfasync', 'false');
       script.src = '//pl28049626.effectivegatecpm.com/ceb154996d37408eb3007a0a9cea06aa/invoke.js';
+      script.onerror = () => {
+        console.log('Native banner script failed to load');
+      };
       nativeBannerRef.current.appendChild(script);
 
       const adContainer = document.createElement('div');
@@ -125,7 +147,7 @@ export default function AnimeDetail() {
 
   const handleSkipAd = () => {
     setShowPrerollAd(false);
-    setAdCountdown(4);
+    setAdCountdown(7);
     adLoadedRef.current = false;
   };
 
@@ -233,6 +255,8 @@ export default function AnimeDetail() {
 
           mediaElement.addEventListener('fullscreenchange', handleFullscreenChange);
           mediaElement.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+          document.addEventListener('fullscreenchange', handleFullscreenChange);
+          document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
         },
         error: function(media) {
           playerInitializedRef.current = false;
@@ -257,13 +281,32 @@ export default function AnimeDetail() {
   };
 
   const handleFullscreenChange = () => {
-    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    const isFullscreen = document.fullscreenElement || 
+                        document.webkitFullscreenElement || 
+                        document.mozFullScreenElement || 
+                        document.msFullscreenElement;
     
     if (isFullscreen && window.innerWidth < 768) {
       if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(err => {
-          console.log('Orientation lock failed:', err);
+          console.log('Orientation lock error:', err);
         });
+      } else if (window.screen && window.screen.lockOrientation) {
+        window.screen.lockOrientation('landscape');
+      } else if (window.screen && window.screen.mozLockOrientation) {
+        window.screen.mozLockOrientation('landscape');
+      } else if (window.screen && window.screen.msLockOrientation) {
+        window.screen.msLockOrientation('landscape');
+      }
+    } else if (!isFullscreen) {
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      } else if (window.screen && window.screen.unlockOrientation) {
+        window.screen.unlockOrientation();
+      } else if (window.screen && window.screen.mozUnlockOrientation) {
+        window.screen.mozUnlockOrientation();
+      } else if (window.screen && window.screen.msUnlockOrientation) {
+        window.screen.msUnlockOrientation();
       }
     }
   };
@@ -397,7 +440,7 @@ export default function AnimeDetail() {
       const streamUrl = `/api/stream?fileName=${encodeURIComponent(episode.video_url)}`;
       setVideoUrl(streamUrl);
       setShowPrerollAd(true);
-      setAdCountdown(4);
+      setAdCountdown(7);
       adLoadedRef.current = false;
     }
   };
@@ -675,6 +718,18 @@ export default function AnimeDetail() {
         }
 
         video:-webkit-full-screen {
+          width: 100vw !important;
+          height: 100vh !important;
+          object-fit: contain !important;
+        }
+
+        video:-moz-full-screen {
+          width: 100vw !important;
+          height: 100vh !important;
+          object-fit: contain !important;
+        }
+
+        video:-ms-fullscreen {
           width: 100vw !important;
           height: 100vh !important;
           object-fit: contain !important;
