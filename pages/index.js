@@ -356,6 +356,19 @@ export default function Home() {
           -webkit-tap-highlight-color: transparent;
         }
 
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background-color: rgba(59, 130, 246, 0.6);
+          border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background-color: rgba(255, 255, 255, 0.05);
+        }
+
         .container {
           width: 100%;
           min-height: 100vh;
