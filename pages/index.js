@@ -1086,6 +1086,10 @@ export default function Home() {
             gap: 15px;
           }
 
+          ::-webkit-scrollbar {
+          width: 2px;
+        }
+
           .carousel-wrapper {
             height: 300px;
           }
