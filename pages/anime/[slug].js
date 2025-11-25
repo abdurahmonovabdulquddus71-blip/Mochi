@@ -1001,7 +1001,7 @@ export default function AnimeDetail() {
           padding: 20px;
           border-radius: 16px;
           border: 2px solid rgba(59, 130, 246, 0.3);
-          width: 100%;
+          width: 80%;
           min-height: 280px;
           display: flex;
           align-items: center;
@@ -1031,6 +1031,7 @@ export default function AnimeDetail() {
 
           .preroll-ad-content {
             min-height: 250px;
+            width: 100%;
           }
 
           .preroll-skip-info {

@@ -12,6 +12,7 @@
         "@aws-sdk/client-s3": "^3.932.0",
         "@aws-sdk/s3-request-presigner": "^3.932.0",
         "@supabase/supabase-js": "^2.57.4",
+        "aos": "^2.3.4",
         "backblaze-b2": "^1.7.1",
         "form-data": "^4.0.4",
         "formidable": "^3.5.4",

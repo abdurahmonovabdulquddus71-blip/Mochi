@@ -2,10 +2,13 @@ import { Html, Head, Main, NextScript } from 'next/document'
 
 export default function Document() {
   return (
-    <Html lang="uz">
+    <Html lang="en">
       <Head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-        <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+        {/* AOS CSS */}
+        <link
+          rel="stylesheet"
+          href="https://unpkg.com/aos@2.3.1/dist/aos.css"
+        />
       </Head>
       <body>
         <Main />

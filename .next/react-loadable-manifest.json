@@ -14,5 +14,11 @@
   "../node_modules/@supabase/storage-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
     "id": "../node_modules/@supabase/storage-js/dist/module/lib/helpers.js -> @supabase/node-fetch",
     "files": []
+  },
+  "index.js -> aos": {
+    "id": "index.js -> aos",
+    "files": [
+      "static/chunks/node_modules_aos_dist_aos_js.js"
+    ]
   }
 }
