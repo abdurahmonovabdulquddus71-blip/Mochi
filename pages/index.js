@@ -1087,8 +1087,7 @@ export default function Home() {
           }
 
           ::-webkit-scrollbar {
-          width: 1px;
-          max-height: 7px;
+          width: 0px;
         }
 
           .carousel-wrapper {
