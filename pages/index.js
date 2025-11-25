@@ -45,31 +45,6 @@ export default function Home() {
     loadData();
   }, []);
 
-  // AOS ni yuklash va ishga tushirish
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      import('aos').then((AOS) => {
-        AOS.init({
-          duration: 800,
-          once: true,
-          offset: 50,
-          easing: 'ease-in-out',
-        });
-      });
-    }
-  }, []);
-
-  // Anime cards yuklangandan keyin AOS ni refresh qilish
-  useEffect(() => {
-    if (!loading && animeCards.length > 0 && typeof window !== 'undefined') {
-      import('aos').then((AOS) => {
-        setTimeout(() => {
-          AOS.refresh();
-        }, 100);
-      });
-    }
-  }, [loading, animeCards]);
-
   // Ikkinchi useEffect - carousel interval
   useEffect(() => {
     if (carouselData.length > 0) {
@@ -356,9 +331,7 @@ export default function Home() {
           name="description" 
           content="Har kuni yangi qisqa animelar, zavqli hikoyalar va quvnoq lahzalar seni MochiTVda kutmoqda!" 
         />
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-        <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
-        <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
       </Head>
       <div id="ad-container" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 9999, background: 'rgba(0, 0, 0, 0.95)', borderTop: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 0' }}>
         {/* Adsterra reklama shu yerda chiqadi */}
@@ -970,475 +943,475 @@ export default function Home() {
           justify-content: center;
           font-size: 20px;
           transition: all 0.3s;
-}
-          .auth-close-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
+        }
 
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 99999;
-    }
+        .auth-close-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: #fff;
+        }
 
-    .modal {
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 30px;
-      max-width: 400px;
-      width: 90%;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 99999;
+        }
 
-    .modal-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
+        .modal {
+          background: #1a1a1a;
+          border-radius: 12px;
+          padding: 30px;
+          max-width: 400px;
+          width: 90%;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-    .modal-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-    }
+        .modal-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
 
-    .modal-icon.success {
-      background: #10b981;
-    }
+        .modal-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+        }
 
-    .modal-icon.error {
-      background: #ef4444;
-    }
+        .modal-icon.success {
+          background: #10b981;
+        }
 
-    .modal-title {
-      font-size: 18px;
-      font-weight: 600;
-    }
+        .modal-icon.error {
+          background: #ef4444;
+        }
 
-    .modal-message {
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
+        .modal-title {
+          font-size: 18px;
+          font-weight: 600;
+        }
 
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
+        .modal-message {
+          color: rgba(255, 255, 255, 0.8);
+          line-height: 1.5;
+          margin-bottom: 20px;
+        }
 
-    .modal-btn {
-      padding: 10px 20px;
-      border-radius: 8px;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 14px;
-    }
+        .modal-actions {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+        }
 
-    .modal-btn.primary {
-      background: #3b82f6;
-      color: #fff;
-    }
+        .modal-btn {
+          padding: 10px 20px;
+          border-radius: 8px;
+          border: none;
+          font-weight: 600;
+          cursor: pointer;
+          font-size: 14px;
+        }
 
-    .modal-btn.secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.8);
-    }
+        .modal-btn.primary {
+          background: #3b82f6;
+          color: #fff;
+        }
 
-    .loader-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 400px;
-    }
+        .modal-btn.secondary {
+          background: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.8);
+        }
 
-    .empty-state {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 60px 20px;
-      color: rgba(255, 255, 255, 0.5);
-    }
+        .loader-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 400px;
+        }
 
-    @keyframes spin {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
-    }
+        .empty-state {
+          grid-column: 1 / -1;
+          text-align: center;
+          padding: 60px 20px;
+          color: rgba(255, 255, 255, 0.5);
+        }
 
-    .animate-spin {
-      animation: spin 1s linear infinite;
-    }
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
 
-    @media (max-width: 1200px) {
-      .cards-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
 
-    @media (max-width: 900px) {
-      .cards-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-      
-      .carousel-wrapper {
-        height: 400px;
-      }
+        @media (max-width: 1200px) {
+          .cards-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
 
-      .carousel-title {
-        font-size: 29px;
-      }
-    }
+        @media (max-width: 900px) {
+          .cards-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+          
+          .carousel-wrapper {
+            height: 400px;
+          }
 
-    @media (max-width: 600px) {
-      .cards-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-      }
+          .carousel-title {
+            font-size: 29px;
+          }
+        }
 
-      .carousel-wrapper {
-        height: 300px;
-      }
+        @media (max-width: 600px) {
+          .cards-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+          }
 
-      .carousel-title {
-        font-size: 26px;
-      }
+          .carousel-wrapper {
+            height: 300px;
+          }
 
-      .carousel-meta {
-        font-size: 12px;
-        gap: 12px;
-      }
+          .carousel-title {
+            font-size: 26px;
+          }
 
-      .section-title {
-        font-size: 22px;
-        display: none;
-      }
+          .carousel-meta {
+            font-size: 12px;
+            gap: 12px;
+          }
 
-      .cards-section {
-        padding: 0 15px;
-      }
+          .section-title {
+            font-size: 22px;
+            display: none;
+          }
 
-      .carousel-content {
-        padding: 25px 10px;
-        margin-bottom: 10px;
-      }
+          .cards-section {
+            padding: 0 15px;
+          }
 
-      .site-header {
-        flex-wrap: wrap;
-      }
+          .carousel-content {
+            padding: 25px 10px;
+            margin-bottom: 10px;
+          }
 
-      .header-logo {
-        height: 32px;
-      }
-    }
-  `}</style>
+          .site-header {
+            flex-wrap: wrap;
+          }
 
-  <div className="container">
-    {/* Header */}
-    <div className="site-header">
-      <img src={LOGO_URL} alt="Mochi" className="header-logo" onClick={() => window.location.href = '/'} />
-      
-      <div className="header-right">
-        {currentUser ? (
-          <div className="user-info">
-            <span className="user-name" onClick={goToProfile}>{currentUser.username}</span>
-            <button className="logout-btn" onClick={handleLogout}>
-              <LogOut size={16} />
+          .header-logo {
+            height: 32px;
+          }
+        }
+      `}</style>
+
+      <div className="container">
+        {/* Header */}
+        <div className="site-header">
+          <img src={LOGO_URL} alt="Mochi" className="header-logo" onClick={() => window.location.href = '/'} />
+          
+          <div className="header-right">
+            {currentUser ? (
+              <div className="user-info">
+                <span className="user-name" onClick={goToProfile}>{currentUser.username}</span>
+                <button className="logout-btn" onClick={handleLogout}>
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <button className="login-btn" onClick={() => showAuthModal('login')}>
+                Kirish
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Carousel */}
+        <div className="carousel-wrapper">
+          <div className="carousel-container">
+            {!loading && carouselData.length === 0 ? (
+              <div className="carousel-empty">
+                <div>Carousel bo'sh</div>
+              </div>
+            ) : loading ? (
+              <div className="loader-container">
+                <Loader className="animate-spin" size={48} color="#3b82f6" />
+              </div>
+            ) : (
+              carouselData.map((item, index) => (
+                <div
+                  key={item.id}
+                  className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
+                >
+                  <img src={item.anime_cards.image_url} alt={item.anime_cards.title} />
+                  
+                  <button 
+                    className="carousel-watch-btn"
+                    onClick={() => goToAnime(item.anime_cards)}
+                  >
+                    <Play size={20} fill="currentColor" />
+                    Tomosha qilish
+                  </button>
+
+                  <div className="carousel-overlay">
+                    <div className="carousel-content">
+                      <div className="carousel-title">{item.anime_cards.title}</div>
+                      <div className="carousel-meta">
+                        <div className="carousel-meta-item">
+                          <span>⭐ {item.anime_cards.rating}</span>
+                        </div>
+                        <div className="carousel-meta-item">
+                          <span>📺 {item.anime_cards.episodes} qism</span>
+                        </div>
+                      </div>
+                      {item.anime_cards.genres && item.anime_cards.genres.length > 0 && (
+                        <div className="carousel-genres">
+                          {item.anime_cards.genres.slice(0, 3).map((genre, idx) => (
+                            <span key={idx} className="genre-badge">{genre}</span>
+                          ))}
+                        </div>
+                      )}
+                      {item.anime_cards.description && (
+                        <div className="carousel-description">
+                          {item.anime_cards.description}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          {carouselData.length > 0 && (
+            <div className="carousel-dots">
+              {carouselData.map((_, index) => (
+                <div
+                  key={index}
+                  className={`carousel-dot ${index === currentSlide ? 'active' : ''}`}
+                  onClick={() => goToSlide(index)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Admin Panel Button */}
+        {isAdmin && (
+          <div className="admin-section">
+            <button className="admin-button" onClick={goToAdmin}>
+              <Lock size={18} />
+              Admin Panel
             </button>
           </div>
-        ) : (
-          <button className="login-btn" onClick={() => showAuthModal('login')}>
-            Kirish
-          </button>
         )}
-      </div>
-    </div>
 
-    {/* Carousel */}
-    <div className="carousel-wrapper">
-      <div className="carousel-container">
-        {!loading && carouselData.length === 0 ? (
-          <div className="carousel-empty">
-            <div>Carousel bo'sh</div>
+        {/* Anime Cards */}
+        <div className="cards-section">
+          <div className="section-header">
+            <h2 className="section-title">🎬 Anime Collection</h2>
           </div>
-        ) : loading ? (
-          <div className="loader-container">
-            <Loader className="animate-spin" size={48} color="#3b82f6" />
-          </div>
-        ) : (
-          carouselData.map((item, index) => (
-            <div
-              key={item.id}
-              className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
-            >
-              <img src={item.anime_cards.image_url} alt={item.anime_cards.title} />
-              
-              <button 
-                className="carousel-watch-btn"
-                onClick={() => goToAnime(item.anime_cards)}
-              >
-                <Play size={20} fill="currentColor" />
-                Tomosha qilish
-              </button>
-
-              <div className="carousel-overlay">
-                <div className="carousel-content">
-                  <div className="carousel-title">{item.anime_cards.title}</div>
-                  <div className="carousel-meta">
-                    <div className="carousel-meta-item">
-                      <span>⭐ {item.anime_cards.rating}</span>
-                    </div>
-                    <div className="carousel-meta-item">
-                      <span>📺 {item.anime_cards.episodes} qism</span>
-                    </div>
-                  </div>
-                  {item.anime_cards.genres && item.anime_cards.genres.length > 0 && (
-                    <div className="carousel-genres">
-                      {item.anime_cards.genres.slice(0, 3).map((genre, idx) => (
-                        <span key={idx} className="genre-badge">{genre}</span>
-                      ))}
-                    </div>
-                  )}
-                  {item.anime_cards.description && (
-                    <div className="carousel-description">
-                      {item.anime_cards.description}
-                    </div>
-                  )}
-                </div>
+          <div className="cards-grid">
+            {loading ? (
+              <div className="loader-container" style={{ gridColumn: '1 / -1' }}>
+                <Loader className="animate-spin" size={48} color="#3b82f6" />
               </div>
-            </div>
-          ))
-        )}
-      </div>
-      {carouselData.length > 0 && (
-        <div className="carousel-dots">
-          {carouselData.map((_, index) => (
-            <div
-              key={index}
-              className={`carousel-dot ${index === currentSlide ? 'active' : ''}`}
-              onClick={() => goToSlide(index)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-
-    {/* Admin Panel Button */}
-    {isAdmin && (
-      <div className="admin-section">
-        <button className="admin-button" onClick={goToAdmin}>
-          <Lock size={18} />
-          Admin Panel
-        </button>
-      </div>
-    )}
-
-    {/* Anime Cards */}
-    <div className="cards-section">
-      <div className="section-header">
-        <h2 className="section-title">🎬 Anime Collection</h2>
-      </div>
-      <div className="cards-grid">
-        {loading ? (
-          <div className="loader-container" style={{ gridColumn: '1 / -1' }}>
-            <Loader className="animate-spin" size={48} color="#3b82f6" />
-          </div>
-        ) : animeCards.length === 0 ? (
-          <div className="empty-state">
-            <div>Hali anime qo'shilmagan</div>
-          </div>
-        ) : (
-          animeCards.map((anime, index) => (
-            <div 
-              key={anime.id} 
-              className="anime-card"
-              data-aos="fade-up"
-              data-aos-delay={index * 50}
-              onClick={() => goToAnime(anime)}
-            >
-              <div className="card-image-wrapper">
-                <img className="card-image" src={anime.image_url} alt={anime.title} />
-                
-                <div className="card-header">
-                  <div className="card-views">
-                    <Eye size={14} />
-                    <span>{allViews[anime.id] || 0}</span>
-                  </div>
-                  <button 
-                    className={`card-like-btn ${favorites.includes(anime.id) ? 'liked' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(anime.id);
-                    }}
-                  >
-                    <Heart size={16} fill={favorites.includes(anime.id) ? 'currentColor' : 'none'} />
-                  </button>
-                </div>
-                
-                <div className="card-overlay">
-                  <div className="card-overlay-info">
-                    <div className="card-overlay-meta">
-                      <div className="card-rating">
-                        <span>⭐ {anime.rating}</span>
+            ) : animeCards.length === 0 ? (
+              <div className="empty-state">
+                <div>Hali anime qo'shilmagan</div>
+              </div>
+            ) : (
+              animeCards.map((anime) => (
+                <div key={anime.id} className="anime-card" onClick={() => goToAnime(anime)}>
+                  <div className="card-image-wrapper">
+                    <img className="card-image" src={anime.image_url} alt={anime.title} />
+                    
+                    <div className="card-header">
+                      <div className="card-views">
+                        <Eye size={14} />
+                        <span>{allViews[anime.id] || 0}</span>
                       </div>
-                      <div className="card-episodes">{anime.episodes} qism</div>
+                      <button 
+                        className={`card-like-btn ${favorites.includes(anime.id) ? 'liked' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(anime.id);
+                        }}
+                      >
+                        <Heart size={16} fill={favorites.includes(anime.id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
+                    
+                    <div className="card-overlay">
+                      <div className="card-overlay-info">
+                        <div className="card-overlay-meta">
+                          <div className="card-rating">
+                            <span>⭐ {anime.rating}</span>
+                          </div>
+                          <div className="card-episodes">{anime.episodes} qism</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  
+                  <div className="card-content">
+                    <div className="card-title">{anime.title}</div>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="card-content">
-                <div className="card-title">{anime.title}</div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-
-    {/* Auth Modal */}
-    {authModal.show && (
-      <AuthModal 
-        mode={authModal.mode}
-        onClose={hideAuthModal}
-        onLogin={handleLogin}
-        onRegister={handleRegister}
-        loading={authLoading}
-      />
-    )}
-
-    {/* Modal */}
-    {modal.show && (
-      <div className="modal-overlay" onClick={hideModal}>
-        <div className="modal" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <div className={`modal-icon ${modal.type}`}>
-              {modal.type === 'success' && '✓'}
-              {modal.type === 'error' && '✕'}
-            </div>
-            <div className="modal-title">
-              {modal.type === 'success' && 'Muvaffaqiyatli'}
-              {modal.type === 'error' && 'Xato'}
-            </div>
-          </div>
-          <div className="modal-message">{modal.message}</div>
-          <div className="modal-actions">
-            <button className="modal-btn primary" onClick={hideModal}>OK</button>
+              ))
+            )}
           </div>
         </div>
-      </div>
-    )}
-  </div>
-</>
-);
-}
-function AuthModal({ mode, onClose, onLogin, onRegister, loading }) {
-const [isLogin, setIsLogin] = useState(mode === 'login');
-const [username, setUsername] = useState('');
-const [password, setPassword] = useState('');
-const handleSubmit = (e) => {
-e.preventDefault();
-if (isLogin) {
-onLogin(username, password);
-} else {
-onRegister(username, password);
-}
-};
-const switchMode = () => {
-setIsLogin(!isLogin);
-setUsername('');
-setPassword('');
-};
-return (
-<div className="auth-modal-overlay" onClick={onClose}>
-<div className="auth-modal" onClick={(e) => e.stopPropagation()}>
-<button className="auth-close-btn" onClick={onClose}>×</button>
-<div className="auth-modal-header">
-      <div className="auth-modal-title">
-        {isLogin ? 'Kirish' : 'Ro\'yxatdan o\'tish'}
-      </div>
-      <div className="auth-modal-subtitle">
-        {isLogin ? 'Hisobingizga kiring' : 'Yangi hisob yarating'}
-      </div>
-    </div>
 
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <div className="auth-input-group">
-        <label className="auth-label">Username</label>
-        <input
-          type="text"
-          className="auth-input"
-          placeholder="Username kiriting"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          disabled={loading}
-          required
-        />
-      </div>
-
-      <div className="auth-input-group">
-        <label className="auth-label">Parol</label>
-        <input
-          type="password"
-          className="auth-input"
-          placeholder="Parol kiriting"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={loading}
-          required
-        />
-      </div>
-
-      <button 
-        type="submit" 
-        className="auth-submit-btn"
-        disabled={loading}
-      >
-        {loading ? (
-          <>
-            <Loader size={16} className="animate-spin" />
-            <span>Kuting...</span>
-          </>
-        ) : (
-          isLogin ? 'Kirish' : 'Ro\'yxatdan o\'tish'
+        {/* Auth Modal */}
+        {authModal.show && (
+          <AuthModal 
+            mode={authModal.mode}
+            onClose={hideAuthModal}
+            onLogin={handleLogin}
+            onRegister={handleRegister}
+            loading={authLoading}
+          />
         )}
-      </button>
-    </form>
 
-    <div className="auth-switch">
-      {isLogin ? (
-        <>
-          Hisobingiz yo'qmi?{' '}
-          <span className="auth-switch-link" onClick={switchMode}>
-            Ro'yxatdan o'tish
-          </span>
-        </>
-      ) : (
-        <>
-          Hisobingiz bormi?{' '}
-          <span className="auth-switch-link" onClick={switchMode}>
-            Kirish
-          </span>
-        </>
-      )}
+        {/* Modal */}
+        {modal.show && (
+          <div className="modal-overlay" onClick={hideModal}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className={`modal-icon ${modal.type}`}>
+                  {modal.type === 'success' && '✓'}
+                  {modal.type === 'error' && '✕'}
+                </div>
+                <div className="modal-title">
+                  {modal.type === 'success' && 'Muvaffaqiyatli'}
+                  {modal.type === 'error' && 'Xato'}
+                </div>
+              </div>
+              <div className="modal-message">{modal.message}</div>
+              <div className="modal-actions">
+                <button className="modal-btn primary" onClick={hideModal}>OK</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function AuthModal({ mode, onClose, onLogin, onRegister, loading }) {
+  const [isLogin, setIsLogin] = useState(mode === 'login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isLogin) {
+      onLogin(username, password);
+    } else {
+      onRegister(username, password);
+    }
+  };
+
+  const switchMode = () => {
+    setIsLogin(!isLogin);
+    setUsername('');
+    setPassword('');
+  };
+
+  return (
+    <div className="auth-modal-overlay" onClick={onClose}>
+      <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="auth-close-btn" onClick={onClose}>×</button>
+        
+        <div className="auth-modal-header">
+          <div className="auth-modal-title">
+            {isLogin ? 'Kirish' : 'Ro\'yxatdan o\'tish'}
+          </div>
+          <div className="auth-modal-subtitle">
+            {isLogin ? 'Hisobingizga kiring' : 'Yangi hisob yarating'}
+          </div>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-input-group">
+            <label className="auth-label">Username</label>
+            <input
+              type="text"
+              className="auth-input"
+              placeholder="Username kiriting"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
+              required
+            />
+          </div>
+
+          <div className="auth-input-group">
+            <label className="auth-label">Parol</label>
+            <input
+              type="password"
+              className="auth-input"
+              placeholder="Parol kiriting"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="auth-submit-btn"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader size={16} className="animate-spin" />
+                <span>Kuting...</span>
+              </>
+            ) : (
+              isLogin ? 'Kirish' : 'Ro\'yxatdan o\'tish'
+            )}
+          </button>
+        </form>
+
+        <div className="auth-switch">
+          {isLogin ? (
+            <>
+              Hisobingiz yo'qmi?{' '}
+              <span className="auth-switch-link" onClick={switchMode}>
+                Ro'yxatdan o'tish
+              </span>
+            </>
+          ) : (
+            <>
+              Hisobingiz bormi?{' '}
+              <span className="auth-switch-link" onClick={switchMode}>
+                Kirish
+              </span>
+            </>
+          )}
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-);
-} 
+  );
+}
