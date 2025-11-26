@@ -680,6 +680,7 @@ export default function AnimeDetail() {
 
         .plyr__control--overlaid {
           border:2px solid;
+          background: none !important;
         }
 
         .plyr__control:focus {
