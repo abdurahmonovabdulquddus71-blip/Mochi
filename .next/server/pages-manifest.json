@@ -1,7 +1,8 @@
 {
   "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/anime/[slug]": "pages/anime/[slug].js",
   "/": "pages/index.js",
-  "/anime/[slug]": "pages/anime/[slug].js"
+  "/api/stream": "pages/api/stream.js"
 }
