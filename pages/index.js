@@ -1172,7 +1172,7 @@ export default function Home() {
                     onClick={() => goToAnime(item.anime_cards)}
                   >
                     <Play size={20} fill="currentColor" />
-                    Tomosha qilish
+                    Watch
                   </button>
 
                   <div className="carousel-overlay">
