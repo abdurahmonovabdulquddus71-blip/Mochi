@@ -722,7 +722,6 @@ export default function AnimeDetail() {
           }
             .plyr__time+.plyr__time{
             display:block !important;
-            font-size:10px;
             }
 
           .plyr {
@@ -937,11 +936,16 @@ export default function AnimeDetail() {
             .plyr__controls{
             font-size:10px;
             }
+            
+            .plyr__progress {
+    position: absolute;
+    min-width: 90%;
+    bottom: 40px;
+    left: 0;
+    margin-left: 15px;
+}
 
-            .plyr__time--current{
-                        font-size:10px;
-
-            }
+          
 
           .preroll-skip-info {
             font-size: 14px;
@@ -949,6 +953,12 @@ export default function AnimeDetail() {
 
           .preroll-countdown {
             font-size: 20px;
+          }
+
+          @media (max-width: 385px) {
+          .plyr__progress{
+              bottom: 36px;
+
           }
         }
       `}</style>
