@@ -679,7 +679,7 @@ export default function AnimeDetail() {
         }
 
         .plyr__control--overlaid {
-          border:2px solid;
+          border:3px solid;
           background: none !important;
         }
 
