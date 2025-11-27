@@ -426,7 +426,7 @@ export default function Home() {
         .user-info {
           display: flex;
           align-items: center;
-          gap: 15px;
+          gap: 5px;
           background: rgba(255, 255, 255, 0.05);
           padding: 8px 10px;
           border-radius: 8px;
