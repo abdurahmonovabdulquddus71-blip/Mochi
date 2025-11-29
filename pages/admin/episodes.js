@@ -712,8 +712,8 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 500 * 1024 * 1024) {
-        showModal('error', 'Video hajmi 500MB dan oshmasligi kerak!');
+      if (file.size > 10000 * 1024 * 1024) {
+        showModal('error', 'Video hajmi 10GB dan oshmasligi kerak!');
         return;
       }
       setFormData({

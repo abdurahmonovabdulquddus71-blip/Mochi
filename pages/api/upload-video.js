@@ -94,7 +94,7 @@ export default async function handler(req, res) {
 
   try {
     // 1️⃣ Form-data faylni olish
-    const form = formidable({ maxFileSize: 500 * 1024 * 1024 }); // 500MB
+    const form = formidable({ maxFileSize: 10000 * 1024 * 1024 }); // 10GB
     const [fields, files] = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
         if (err) reject(err);
