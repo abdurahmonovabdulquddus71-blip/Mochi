@@ -2,8 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/admin/episodes": "pages/admin/episodes.js",
+  "/info/info": "pages/info/info.js",
   "/": "pages/index.js",
-  "/anime/[slug]": "pages/anime/[slug].js",
-  "/api/stream": "pages/api/stream.js"
+  "/anime/[slug]": "pages/anime/[slug].js"
 }

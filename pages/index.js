@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Heart, LogOut, Lock, Loader, Eye, Play } from 'lucide-react';
+import { Heart, LogOut, Lock, Loader, Eye, Play, Youtube, Send } from 'lucide-react';
+import { FaTelegramPlane } from "react-icons/fa";
+import { LuInstagram } from "react-icons/lu";
 import { createClient } from '@supabase/supabase-js';
-import Head from 'next/head';
 
 const supabaseUrl = 'https://itxndrvoolbvzdseuljx.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0eG5kcnZvb2xidnpkc2V1bGp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzUyNjYsImV4cCI6MjA3MzcxMTI2Nn0.4x264DWr3QVjgPQYqf73QdAypfhKXvuVxw3LW9QYyGM';
@@ -21,6 +22,8 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [allViews, setAllViews] = useState({});
+  const [displayCount, setDisplayCount] = useState(12);
+  const [isMobile, setIsMobile] = useState(false);
 
   const showModal = (type, message, onConfirm = null) => {
     setModal({ show: true, type, message, onConfirm });
@@ -38,14 +41,15 @@ export default function Home() {
     setAuthModal({ show: false, mode: 'login' });
   };
 
-  // Birinchi useEffect - mount
   useEffect(() => {
     setMounted(true);
     checkCurrentUser();
     loadData();
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Ikkinchi useEffect - carousel interval
   useEffect(() => {
     if (carouselData.length > 0) {
       const interval = setInterval(() => {
@@ -55,21 +59,27 @@ export default function Home() {
     }
   }, [carouselData]);
 
-  // Uchinchi useEffect - Adsterra banner script (fixed bottom)
   useEffect(() => {
     const timer = setTimeout(() => {
       const script = document.createElement('script');
       script.src = '//pl28049290.effectivegatecpm.com/b1/fa/d0/b1fad09ba6faef1a0871f0c8f7385407.js';
       script.async = true;
-      
       const adContainer = document.getElementById('ad-container');
       if (adContainer) {
         adContainer.appendChild(script);
       }
     }, 1500);
-    
     return () => clearTimeout(timer);
   }, []);
+
+  const checkIsMobile = () => {
+    setIsMobile(window.innerWidth < 1200);
+    if (window.innerWidth >= 1200) {
+      setDisplayCount(15);
+    } else {
+      setDisplayCount(12);
+    }
+  };
 
   const checkCurrentUser = async () => {
     try {
@@ -135,7 +145,6 @@ export default function Home() {
 
       setCarouselData(carouselItems || []);
       setAnimeCards(cards || []);
-      
       await loadAllViews();
     } catch (error) {
       console.error('Xato:', error);
@@ -317,25 +326,21 @@ export default function Home() {
     window.location.href = '/admin/admin';
   };
 
+  const handleLoadMore = () => {
+    const newCount = isMobile ? displayCount + 12 : displayCount + 15;
+    setDisplayCount(newCount);
+  };
+
   if (!mounted) {
     return null;
   }
 
   const isAdmin = currentUser?.username === 'Malika';
+  const displayedAnimes = animeCards.slice(0, displayCount);
+  const hasMore = displayedAnimes.length < animeCards.length;
 
   return (
     <>
-     <Head>
-        <title>MochiTv | Eng zo'r tarjima animelar online — yangi, qisqa va sifatli!</title>
-        <meta 
-          name="description" 
-          content="Har kuni yangi qisqa animelar, zavqli hikoyalar va quvnoq lahzalar seni MochiTVda kutmoqda!" 
-        />
-     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-      </Head>
-      <div id="ad-container" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 9999, background: 'rgba(0, 0, 0, 0.95)', borderTop: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 0' }}>
-        {/* Adsterra reklama shu yerda chiqadi */}
-      </div>
       <style jsx global>{`
         * {
           box-sizing: border-box;
@@ -372,7 +377,6 @@ export default function Home() {
         .container {
           width: 100%;
           min-height: 100vh;
-          padding-bottom: 120px;
         }
 
         .site-header {
@@ -806,6 +810,110 @@ export default function Home() {
           text-overflow: ellipsis;
         }
 
+        .load-more-section {
+          display: flex;
+          justify-content: center;
+          margin: 40px 0;
+        }
+
+        .load-more-btn {
+          background: none;
+          border: none;
+          color: #fff;
+          border: 2px solid;
+          padding: 14px 30px;
+          border-radius: 15px;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        
+
+        .footer {
+          background: rgba(0, 0, 0, 0.95);
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 40px 20px;
+          margin-top: 60px;
+         
+        }
+
+        .footer-content {
+          max-width: 1400px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 30px;
+        }
+
+        .footer-section {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          justify-content: center;
+        }
+
+        .footer-col {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          margin:0 auto;
+        }
+
+        .footer-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: #fff;
+        }
+
+        .footer-link {
+          color: rgba(255, 255, 255, 0.6);
+          text-decoration: none;
+          font-size: 14px;
+          transition: color 0.3s;
+          cursor: pointer;
+        }
+
+        .footer-link:hover {
+          color: #3b82f6;
+        }
+
+        .footer-socials {
+          display: flex;
+          gap: 15px;
+          align-items: center;
+        }
+
+        .social-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(59, 130, 246, 0.2);
+          border: 1px solid rgba(59, 130, 246, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s;
+          color: #3b82f6;
+        }
+
+        .social-icon:hover {
+          background: rgba(59, 130, 246, 0.3);
+          transform: translateY(-2px);
+        }
+
+        .footer-bottom {
+          text-align: center;
+          padding-top: 20px;
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 14px;
+        }
+
+       
         .auth-modal-overlay {
           position: fixed;
           top: 0;
@@ -864,7 +972,7 @@ export default function Home() {
           color: rgba(255, 255, 255, 0.8);
         }
 
-        .auth-input {
+        auth-input {
           width: 100%;
           padding: 12px 16px;
           background: rgba(255, 255, 255, 0.05);
@@ -874,548 +982,550 @@ export default function Home() {
           font-size: 14px;
           transition: all 0.3s;
         }
+          .auth-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background: rgba(255, 255, 255, 0.08);
+    }
 
-        .auth-input:focus {
-          outline: none;
-          border-color: #3b82f6;
-          background: rgba(255, 255, 255, 0.08);
+    .auth-submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: none;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .auth-submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .auth-submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .auth-switch {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .auth-switch-link {
+      color: #3b82f6;
+      cursor: pointer;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+
+    .auth-switch-link:hover {
+      color: #2563eb;
+    }
+
+    .auth-close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.6);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: all 0.3s;
+    }
+
+    .auth-close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+    }
+
+    .modal {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .modal-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .modal-icon.success {
+      background: #10b981;
+    }
+
+    .modal-icon.error {
+      background: #ef4444;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .modal-message {
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .modal-btn.primary {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .modal-btn.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .loader-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+
+    #ad-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      display: none;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px 0;
+    }
+
+    @media (max-width: 1200px) {
+      .cards-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .footer-section {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      
+      .carousel-wrapper {
+        height: 400px;
+      }
+
+      .carousel-title {
+        font-size: 29px;
+      }
+
+      .footer-section {
+      display: flex;
+      justify-content: center;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
+
+      ::-webkit-scrollbar {
+        width: 0px;
+      }
+
+      .carousel-wrapper {
+        height: 300px;
+      }
+
+       .mobile-hide{
+          display: none;
+      }
+
+      .carousel-title {
+        font-size: 26px;
+      }
+
+      .carousel-meta {
+        font-size: 12px;
+        gap: 12px;
+      }
+
+      .section-title {
+        font-size: 22px;
+        display: none;
+      }
+
+      .cards-section {
+        padding: 0 15px;
+      }
+
+      .carousel-content {
+        padding: 25px 10px;
+        margin-bottom: 10px;
+      }
+
+      .site-header {
+        flex-wrap: wrap;
+      }
+
+      .mobile-hide{
+        display: none !important;
         }
 
-        .auth-submit-btn {
-          width: 100%;
-          padding: 14px;
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          border: none;
-          color: #fff;
-          border-radius: 8px;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s;
-          margin-top: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
+      .header-logo {
+        height: 32px;
+      }
 
-        .auth-submit-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
+      .footer-content {
+        gap: 20px;
+      }
 
-        .auth-submit-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
+      .footer-col {
+        gap: 10px;
+        display: flex;
+        flex-direction: default;
+      }
 
-        .auth-switch {
-          text-align: center;
-          margin-top: 20px;
-          font-size: 14px;
-          color: rgba(255, 255, 255, 0.6);
-        }
+      .footer-title {
+        font-size: 14px;
+      }
 
-        .auth-switch-link {
-          color: #3b82f6;
-          cursor: pointer;
-          font-weight: 600;
-          transition: color 0.3s;
-        }
+      .footer-link {
+        font-size: 12px;
+      }
 
-        .auth-switch-link:hover {
-          color: #2563eb;
-        }
+      .social-icon {
+        width: 36px;
+        height: 36px;
+      }
+    }
+  `}</style>
 
-        .auth-close-btn {
-          position: absolute;
-          top: 15px;
-          right: 15px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.6);
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-          transition: all 0.3s;
-        }
+  <div id="ad-container"></div>
 
-        .auth-close-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #fff;
-        }
-
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 99999;
-        }
-
-        .modal {
-          background: #1a1a1a;
-          border-radius: 12px;
-          padding: 30px;
-          max-width: 400px;
-          width: 90%;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 20px;
-        }
-
-        .modal-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-        }
-
-        .modal-icon.success {
-          background: #10b981;
-        }
-
-        .modal-icon.error {
-          background: #ef4444;
-        }
-
-        .modal-title {
-          font-size: 18px;
-          font-weight: 600;
-        }
-
-        .modal-message {
-          color: rgba(255, 255, 255, 0.8);
-          line-height: 1.5;
-          margin-bottom: 20px;
-        }
-
-        .modal-actions {
-          display: flex;
-          gap: 10px;
-          justify-content: flex-end;
-        }
-
-        .modal-btn {
-          padding: 10px 20px;
-          border-radius: 8px;
-          border: none;
-          font-weight: 600;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        .modal-btn.primary {
-          background: #3b82f6;
-          color: #fff;
-        }
-
-        .modal-btn.secondary {
-          background: rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.8);
-        }
-
-        .loader-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 400px;
-        }
-
-        .empty-state {
-          grid-column: 1 / -1;
-          text-align: center;
-          padding: 60px 20px;
-          color: rgba(255, 255, 255, 0.5);
-        }
-
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-
-        @media (max-width: 1200px) {
-          .cards-grid {
-            grid-template-columns: repeat(4, 1fr);
-          }
-        }
-
-        @media (max-width: 900px) {
-          .cards-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-          
-          .carousel-wrapper {
-            height: 400px;
-          }
-
-          .carousel-title {
-            font-size: 29px;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .cards-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-          }
-
-          ::-webkit-scrollbar {
-          width: 0px;
-        }
-
-          .carousel-wrapper {
-            height: 300px;
-          }
-
-          .carousel-title {
-            font-size: 26px;
-          }
-
-          .carousel-meta {
-            font-size: 12px;
-            gap: 12px;
-          }
-
-          .section-title {
-            font-size: 22px;
-            display: none;
-          }
-
-          .cards-section {
-            padding: 0 15px;
-          }
-
-          .carousel-content {
-            padding: 25px 10px;
-            margin-bottom: 10px;
-          }
-
-          .site-header {
-            flex-wrap: wrap;
-          }
-
-          .header-logo {
-            height: 32px;
-          }
-        }
-      `}</style>
-
-      <div className="container">
-        {/* Header */}
-        <div className="site-header">
-          <img src={LOGO_URL} alt="Mochi" className="header-logo" onClick={() => window.location.href = '/'} />
-          
-          <div className="header-right">
-            {currentUser ? (
-              <div className="user-info">
-                <span className="user-name" onClick={goToProfile}>{currentUser.username}</span>
-                <button className="logout-btn" onClick={handleLogout}>
-                  <LogOut size={16} />
-                </button>
-              </div>
-            ) : (
-              <button className="login-btn" onClick={() => showAuthModal('login')}>
-                Kirish
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Carousel */}
-        <div className="carousel-wrapper">
-          <div className="carousel-container">
-            {!loading && carouselData.length === 0 ? (
-              <div className="carousel-empty">
-                <div>Carousel bo'sh</div>
-              </div>
-            ) : loading ? (
-              <div className="loader-container">
-                <Loader className="animate-spin" size={48} color="#3b82f6" />
-              </div>
-            ) : (
-              carouselData.map((item, index) => (
-                <div
-                  key={item.id}
-                  className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
-                >
-                  <img src={item.anime_cards.image_url} alt={item.anime_cards.title} />
-                  
-                  <button 
-                    className="carousel-watch-btn"
-                    onClick={() => goToAnime(item.anime_cards)}
-                  >
-                    <Play size={20} fill="currentColor" />
-                    Watch
-                  </button>
-
-                  <div className="carousel-overlay">
-                    <div className="carousel-content">
-                      <div className="carousel-title">{item.anime_cards.title}</div>
-                      <div className="carousel-meta">
-                        <div className="carousel-meta-item">
-                          <span>⭐ {item.anime_cards.rating}</span>
-                        </div>
-                        <div className="carousel-meta-item">
-                          <span>📺 {item.anime_cards.episodes} qism</span>
-                        </div>
-                      </div>
-                      {item.anime_cards.genres && item.anime_cards.genres.length > 0 && (
-                        <div className="carousel-genres">
-                          {item.anime_cards.genres.slice(0, 3).map((genre, idx) => (
-                            <span key={idx} className="genre-badge">{genre}</span>
-                          ))}
-                        </div>
-                      )}
-                      {item.anime_cards.description && (
-                        <div className="carousel-description">
-                          {item.anime_cards.description}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          {carouselData.length > 0 && (
-            <div className="carousel-dots">
-              {carouselData.map((_, index) => (
-                <div
-                  key={index}
-                  className={`carousel-dot ${index === currentSlide ? 'active' : ''}`}
-                  onClick={() => goToSlide(index)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Admin Panel Button */}
-        {isAdmin && (
-          <div className="admin-section">
-            <button className="admin-button" onClick={goToAdmin}>
-              <Lock size={18} />
-              Admin Panel
+  <div className="container">
+    {/* Header */}
+    <div className="site-header">
+      <img src={LOGO_URL} alt="Mochi" className="header-logo" onClick={() => window.location.href = '/'} />
+      
+      <div className="header-right">
+        {currentUser ? (
+          <div className="user-info">
+            <span className="user-name" onClick={goToProfile}>{currentUser.username}</span>
+            <button className="logout-btn" onClick={handleLogout}>
+              <LogOut size={16} />
             </button>
           </div>
-        )}
-
-        {/* Anime Cards */}
-        <div className="cards-section">
-          <div className="section-header">
-            <h2 className="section-title">🎬 Anime Collection</h2>
-          </div>
-          <div className="cards-grid">
-            {loading ? (
-              <div className="loader-container" style={{ gridColumn: '1 / -1' }}>
-                <Loader className="animate-spin" size={48} color="#3b82f6" />
-              </div>
-            ) : animeCards.length === 0 ? (
-              <div className="empty-state">
-                <div>Hali anime qo'shilmagan</div>
-              </div>
-            ) : (
-              animeCards.map((anime) => (
-                <div key={anime.id} className="anime-card" onClick={() => goToAnime(anime)}>
-                  <div className="card-image-wrapper">
-                    <img className="card-image" src={anime.image_url} alt={anime.title} />
-                    
-                    <div className="card-header">
-                      <div className="card-views">
-                        <Eye size={14} />
-                        <span>{allViews[anime.id] || 0}</span>
-                      </div>
-                      <button 
-                        className={`card-like-btn ${favorites.includes(anime.id) ? 'liked' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(anime.id);
-                        }}
-                      >
-                        <Heart size={16} fill={favorites.includes(anime.id) ? 'currentColor' : 'none'} />
-                      </button>
-                    </div>
-                    
-                    <div className="card-overlay">
-                      <div className="card-overlay-info">
-                        <div className="card-overlay-meta">
-                          <div className="card-rating">
-                            <span>⭐ {anime.rating}</span>
-                          </div>
-                          <div className="card-episodes">{anime.episodes} qism</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="card-content">
-                    <div className="card-title">{anime.title}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Auth Modal */}
-        {authModal.show && (
-          <AuthModal 
-            mode={authModal.mode}
-            onClose={hideAuthModal}
-            onLogin={handleLogin}
-            onRegister={handleRegister}
-            loading={authLoading}
-          />
-        )}
-
-        {/* Modal */}
-        {modal.show && (
-          <div className="modal-overlay" onClick={hideModal}>
-            <div className="modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <div className={`modal-icon ${modal.type}`}>
-                  {modal.type === 'success' && '✓'}
-                  {modal.type === 'error' && '✕'}
-                </div>
-                <div className="modal-title">
-                  {modal.type === 'success' && 'Muvaffaqiyatli'}
-                  {modal.type === 'error' && 'Xato'}
-                </div>
-              </div>
-              <div className="modal-message">{modal.message}</div>
-              <div className="modal-actions">
-                <button className="modal-btn primary" onClick={hideModal}>OK</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-function AuthModal({ mode, onClose, onLogin, onRegister, loading }) {
-  const [isLogin, setIsLogin] = useState(mode === 'login');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (isLogin) {
-      onLogin(username, password);
-    } else {
-      onRegister(username, password);
-    }
-  };
-
-  const switchMode = () => {
-    setIsLogin(!isLogin);
-    setUsername('');
-    setPassword('');
-  };
-
-  return (
-    <div className="auth-modal-overlay" onClick={onClose}>
-      <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="auth-close-btn" onClick={onClose}>×</button>
-        
-        <div className="auth-modal-header">
-          <div className="auth-modal-title">
-            {isLogin ? 'Kirish' : 'Ro\'yxatdan o\'tish'}
-          </div>
-          <div className="auth-modal-subtitle">
-            {isLogin ? 'Hisobingizga kiring' : 'Yangi hisob yarating'}
-          </div>
-        </div>
-
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="auth-input-group">
-            <label className="auth-label">Username</label>
-            <input
-              type="text"
-              className="auth-input"
-              placeholder="Username kiriting"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-
-          <div className="auth-input-group">
-            <label className="auth-label">Parol</label>
-            <input
-              type="password"
-              className="auth-input"
-              placeholder="Parol kiriting"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="auth-submit-btn"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader size={16} className="animate-spin" />
-                <span>Kuting...</span>
-              </>
-            ) : (
-              isLogin ? 'Kirish' : 'Ro\'yxatdan o\'tish'
-            )}
+        ) : (
+          <button className="login-btn" onClick={() => showAuthModal('login')}>
+            Kirish
           </button>
-        </form>
-
-        <div className="auth-switch">
-          {isLogin ? (
-            <>
-              Hisobingiz yo'qmi?{' '}
-              <span className="auth-switch-link" onClick={switchMode}>
-                Ro'yxatdan o'tish
-              </span>
-            </>
-          ) : (
-            <>
-              Hisobingiz bormi?{' '}
-              <span className="auth-switch-link" onClick={switchMode}>
-                Kirish
-              </span>
-            </>
-          )}
-        </div>
+        )}
       </div>
     </div>
-  );
+
+    {/* Carousel */}
+    <div className="carousel-wrapper">
+      <div className="carousel-container">
+        {!loading && carouselData.length === 0 ? (
+          <div className="carousel-empty">
+            <div>Carousel bo'sh</div>
+          </div>
+        ) : loading ? (
+          <div className="loader-container">
+            <Loader className="animate-spin" size={48} color="#3b82f6" />
+          </div>
+        ) : (
+          carouselData.map((item, index) => (
+            <div
+              key={item.id}
+              className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
+            >
+              <img src={item.anime_cards.image_url} alt={item.anime_cards.title} />
+              
+              <button 
+                className="carousel-watch-btn"
+                onClick={() => goToAnime(item.anime_cards)}
+              >
+                <Play size={20} fill="currentColor" />
+                Watch
+              </button>
+
+              <div className="carousel-overlay">
+                <div className="carousel-content">
+                  <div className="carousel-title">{item.anime_cards.title}</div>
+                  <div className="carousel-meta">
+                    <div className="carousel-meta-item">
+                      <span>⭐ {item.anime_cards.rating}</span>
+                    </div>
+                    <div className="carousel-meta-item">
+                      <span>📺 {item.anime_cards.episodes} qism</span>
+                    </div>
+                  </div>
+                  {item.anime_cards.genres && item.anime_cards.genres.length > 0 && (
+                    <div className="carousel-genres">
+                      {item.anime_cards.genres.slice(0, 3).map((genre, idx) => (
+                        <span key={idx} className="genre-badge">{genre}</span>
+                      ))}
+                    </div>
+                  )}
+                  {item.anime_cards.description && (
+                    <div className="carousel-description">
+                      {item.anime_cards.description}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      {carouselData.length > 0 && (
+        <div className="carousel-dots">
+          {carouselData.map((_, index) => (
+            <div
+              key={index}
+              className={`carousel-dot ${index === currentSlide ? 'active' : ''}`}
+              onClick={() => goToSlide(index)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+
+    {/* Admin Panel Button */}
+    {isAdmin && (
+      <div className="admin-section">
+        <button className="admin-button" onClick={goToAdmin}>
+          <Lock size={18} />
+          Admin Panel
+        </button>
+      </div>
+    )}
+
+    {/* Anime Cards */}
+    <div className="cards-section">
+      <div className="section-header">
+        <h2 className="section-title">🎬 Anime Collection</h2>
+      </div>
+      <div className="cards-grid">
+        {loading ? (
+          <div className="loader-container" style={{ gridColumn: '1 / -1' }}>
+            <Loader className="animate-spin" size={48} color="#3b82f6" />
+          </div>
+        ) : animeCards.length === 0 ? (
+          <div className="empty-state">
+            <div>Hali anime qo'shilmagan</div>
+          </div>
+        ) : (
+          displayedAnimes.map((anime) => (
+            <div key={anime.id} className="anime-card" onClick={() => goToAnime(anime)}>
+              <div className="card-image-wrapper">
+                <img className="card-image" src={anime.image_url} alt={anime.title} />
+                
+                <div className="card-header">
+                  <div className="card-views">
+                    <Eye size={14} />
+                    <span>{allViews[anime.id] || 0}</span>
+                  </div>
+                  <button 
+                    className={`card-like-btn ${favorites.includes(anime.id) ? 'liked' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(anime.id);
+                    }}
+                  >
+                    <Heart size={16} fill={favorites.includes(anime.id) ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
+                
+                <div className="card-overlay">
+                  <div className="card-overlay-info">
+                    <div className="card-overlay-meta">
+                      <div className="card-rating">
+                        <span>⭐ {anime.rating}</span>
+                      </div>
+                      <div className="card-episodes">{anime.episodes} qism</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="card-content">
+                <div className="card-title">{anime.title}</div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Load More Button */}
+      {hasMore && !loading && (
+        <div className="load-more-section">
+          <button className="load-more-btn" onClick={handleLoadMore}>
+            Ko'proq ko'rish
+          </button>
+        </div>
+      )}
+    </div>
+
+    {/* Auth Modal */}
+    {authModal.show && (
+      <AuthModal 
+        mode={authModal.mode}
+        onClose={hideAuthModal}
+        onLogin={handleLogin}
+        onRegister={handleRegister}
+        loading={authLoading}
+      />
+    )}
+
+    {/* Modal */}
+    {modal.show && (
+      <div className="modal-overlay" onClick={hideModal}>
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className={`modal-icon ${modal.type}`}>
+              {modal.type === 'success' && '✓'}
+              {modal.type === 'error' && '✕'}
+            </div>
+            <div className="modal-title">
+              {modal.type === 'success' && 'Muvaffaqiyatli'}
+              {modal.type === 'error' && 'Xato'}
+            </div>
+          </div>
+          <div className="modal-message">{modal.message}</div>
+          <div className="modal-actions">
+            <button className="modal-btn primary" onClick={hideModal}>OK</button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>  
+
+  {/* Footer */}
+  <footer className="footer">
+    <div className="footer-content">
+      <div className="footer-section">
+        <div className="footer-col">
+          <div className="footer-title">MochiTV Haqida</div>
+          <a href="/info/info" className="footer-link">Biz haqimizda</a>
+          <a href="/info/info" className="footer-link">Aloqa</a>
+          <a href="/info/info" className="footer-link">Muammo Xabar Qilish</a>
+        </div>
+        <div className="footer-col ">
+          <div  className="footer-title">Yordam</div>
+          <a href="/info/info" className="footer-link">FAQ</a>
+          <a href="/info/info" className="footer-link">Qo'llanma</a>
+          <a href="/info/info" className="footer-link">Shartlar va Shartlar</a>
+        </div>
+        <div className="footer-col mobile-hide">
+          <div className="footer-title">Ijtimoiy Tarmoqlar</div>
+          <div className="footer-socials">
+            <a className="social-icon" href="https://youtube.com/@MochiTvUz" target="_blank" rel="noopener noreferrer" title="YouTube">
+              <Youtube size={20} />
+            </a>
+            <a className="social-icon" href="https://t.me/aniblauzbrinchiuzfandub" target="_blank" rel="noopener noreferrer" title="Telegram">
+              <FaTelegramPlane  size={20}/>
+
+            </a>
+            <a className="social-icon" href="https://instagram.com/mochitv_uz" target="_blank" rel="noopener noreferrer" title="Instagram">
+              <LuInstagram size={20} />
+            </a>
+          </div>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <p>&copy; 2025 MochiTv.Uz Barcha huquqlar himoyalangan.</p>
+      </div>
+    </div>
+  </footer>
+</>
+);
 }
