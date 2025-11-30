@@ -704,7 +704,7 @@ export default function AnimeDetail() {
         }
 
         .plyr__progress input[type=range] {
-          color: #3b82f6;
+          color: rgba(59, 130, 246, 0.3);
         }
 
         .plyr__volume input[type=range] {
@@ -1160,10 +1160,10 @@ Davom etish →
                 style={{
                   ...styles.episodeBtn,
                   background: currentEpisode === episode.episode_number
-                    ? '#3b82f6'
+                    ? 'rgba(59, 130, 246, 0.3)'
                     : 'rgba(255, 255, 255, 0.05)',
                   borderColor: currentEpisode === episode.episode_number
-                    ? '#3b82f6'
+                    ? 'rgba(59, 130, 246, 0.3)'
                     : 'rgba(255, 255, 255, 0.2)',
                   color: '#fff',
                 }}
