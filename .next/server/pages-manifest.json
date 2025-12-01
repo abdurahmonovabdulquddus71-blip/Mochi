@@ -2,7 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/info/info": "pages/info/info.js",
   "/": "pages/index.js",
+  "/profile/[username]": "pages/profile/[username].js",
+  "/info/info": "pages/info/info.js",
   "/anime/[slug]": "pages/anime/[slug].js"
 }

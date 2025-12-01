@@ -74,16 +74,20 @@ export default function InfoPage() {
     width: 100%;
     height: 100%;
     overflow-x: hidden;
+              -webkit-tap-highlight-color: transparent;
+
   }
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;
     background: #000000;
     color: #ffffff;
+              -webkit-tap-highlight-color: transparent;
+
   }
 
   ::-webkit-scrollbar {
-    width: 8px;
+    width: 0px;
   }
 
   ::-webkit-scrollbar-thumb {
@@ -190,6 +194,7 @@ const styles = {
     padding: '15px 20px',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: '15px'
   },
   backBtn: {
@@ -207,7 +212,7 @@ const styles = {
     transition: 'all 0.3s',
   },
   headerTitle: {
-    fontSize: '24px',
+    fontSize: '17px',
     fontWeight: '700'
   },
   mainContent: {

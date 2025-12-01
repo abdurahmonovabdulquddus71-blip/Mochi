@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Heart, LogOut, Lock, Loader, Eye, Play, Youtube, Send } from 'lucide-react';
+import { Heart, LogOut, Lock, Loader, Eye, Play, Youtube, X } from 'lucide-react';
 import { FaTelegramPlane } from "react-icons/fa";
 import { LuInstagram } from "react-icons/lu";
 import { createClient } from '@supabase/supabase-js';
@@ -9,6 +9,118 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const LOGO_URL = '/assets/lego.png';
+
+// Auth Modal Component
+function AuthModal({ mode, onClose, onLogin, onRegister, loading }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentMode, setCurrentMode] = useState(mode);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (currentMode === 'login') {
+      onLogin(username, password);
+    } else {
+      onRegister(username, password, confirmPassword);
+    }
+  };
+
+  const switchMode = () => {
+    setCurrentMode(currentMode === 'login' ? 'register' : 'login');
+    setUsername('');
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  return (
+    <div className="auth-modal-overlay" onClick={onClose}>
+      <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="auth-close-btn" onClick={onClose}>
+          <X size={18} />
+        </button>
+        
+        <div className="auth-modal-header">
+          <h2 className="auth-modal-title">
+            {currentMode === 'login' ? 'Tizimga kirish' : "Ro'yxatdan o'tish"}
+          </h2>
+          <p className="auth-modal-subtitle">
+            {currentMode === 'login' 
+              ? 'Akkauntingizga kiring' 
+              : "Yangi akkount yarating"}
+          </p>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-input-group">
+            <label className="auth-label">Username</label>
+            <input
+              type="text"
+              className="auth-input"
+              placeholder="Username kiriting"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="auth-input-group">
+            <label className="auth-label">Parol</label>
+            <input
+              type="password"
+              className="auth-input"
+              placeholder="Parol kiriting"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          {currentMode === 'register' && (
+            <div className="auth-input-group">
+              <label className="auth-label">Parolni tasdiqlang</label>
+              <input
+                type="password"
+                className="auth-input"
+                placeholder="Parolni qayta kiriting"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+          )}
+
+          <button 
+            type="submit" 
+            className="auth-submit-btn"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader className="animate-spin" size={18} />
+                Kuting...
+              </>
+            ) : (
+              currentMode === 'login' ? 'Kirish' : "Ro'yxatdan o'tish"
+            )}
+          </button>
+        </form>
+
+        <div className="auth-switch">
+          {currentMode === 'login' 
+            ? "Akkauntingiz yo'qmi? " 
+            : "Akkauntingiz bormi? "}
+          <span className="auth-switch-link" onClick={switchMode}>
+            {currentMode === 'login' ? "Ro'yxatdan o'tish" : 'Kirish'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [modal, setModal] = useState({ show: false, type: '', message: '', onConfirm: null });
@@ -180,19 +292,28 @@ export default function Home() {
     setAuthLoading(false);
   };
 
-  const handleRegister = async (username, password) => {
-    if (!username || !password) {
+  const handleRegister = async (username, password, confirmPassword) => {
+    if (!username || !password || !confirmPassword) {
       showModal('error', 'Barcha maydonlarni to\'ldiring!');
+      setAuthLoading(false);
       return;
     }
 
     if (username.length < 3) {
       showModal('error', 'Username kamida 3 ta belgidan iborat bo\'lishi kerak!');
+      setAuthLoading(false);
       return;
     }
 
     if (password.length < 6) {
       showModal('error', 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak!');
+      setAuthLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showModal('error', 'Parollar mos kelmadi!');
+      setAuthLoading(false);
       return;
     }
 
@@ -820,9 +941,9 @@ export default function Home() {
           background: none;
           border: none;
           color: #fff;
-          border: 2px solid;
-          padding: 14px 30px;
-          border-radius: 15px;
+          border: 1px solid silver;
+          padding: 10px 15px;
+          border-radius: 10px;
           font-size: 15px;
           font-weight: 700;
           cursor: pointer;
@@ -832,14 +953,11 @@ export default function Home() {
           gap: 8px;
         }
 
-        
-
         .footer {
           background: rgba(0, 0, 0, 0.95);
           border-top: 1px solid rgba(255, 255, 255, 0.1);
           padding: 40px 20px;
           margin-top: 60px;
-         
         }
 
         .footer-content {
@@ -861,128 +979,128 @@ export default function Home() {
           flex-direction: column;
           gap: 15px;
           margin:0 auto;
-        }
+          }
 
-        .footer-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #fff;
-        }
+    .footer-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
 
-        .footer-link {
-          color: rgba(255, 255, 255, 0.6);
-          text-decoration: none;
-          font-size: 14px;
-          transition: color 0.3s;
-          cursor: pointer;
-        }
+    .footer-link {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.3s;
+      cursor: pointer;
+    }
 
-        .footer-link:hover {
-          color: #3b82f6;
-        }
+    .footer-link:hover {
+      color: #3b82f6;
+    }
 
-        .footer-socials {
-          display: flex;
-          gap: 15px;
-          align-items: center;
-        }
+    .footer-socials {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
 
-        .social-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: rgba(59, 130, 246, 0.2);
-          border: 1px solid rgba(59, 130, 246, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s;
-          color: #3b82f6;
-        }
+    .social-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: #3b82f6;
+    }
 
-        .social-icon:hover {
-          background: rgba(59, 130, 246, 0.3);
-          transform: translateY(-2px);
-        }
+    .social-icon:hover {
+      background: rgba(59, 130, 246, 0.3);
+      transform: translateY(-2px);
+    }
 
-        .footer-bottom {
-          text-align: center;
-          padding-top: 20px;
-          color: rgba(255, 255, 255, 0.5);
-          font-size: 14px;
-        }
+    .footer-bottom {
+      text-align: center;
+      padding-top: 20px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
 
-       
-        .auth-modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.9);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 99999;
-          backdrop-filter: blur(8px);
-        }
+    .auth-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      backdrop-filter: blur(8px);
+    }
 
-        .auth-modal {
-          background: #1a1a1a;
-          border-radius: 16px;
-          padding: 40px;
-          max-width: 400px;
-          width: 90%;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          position: relative;
-        }
+    .auth-modal {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 400px;
+      width: 90%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
 
-        .auth-modal-header {
-          text-align: center;
-          margin-bottom: 30px;
-        }
+    .auth-modal-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
 
-        .auth-modal-title {
-          font-size: 24px;
-          font-weight: 700;
-          margin-bottom: 10px;
-        }
+    .auth-modal-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
 
-        .auth-modal-subtitle {
-          font-size: 14px;
-          color: rgba(255, 255, 255, 0.6);
-        }
+    .auth-modal-subtitle {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+    }
 
-        .auth-form {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
 
-        .auth-input-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
+    .auth-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
-        .auth-label {
-          font-size: 14px;
-          font-weight: 600;
-          color: rgba(255, 255, 255, 0.8);
-        }
+    .auth-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+    }
 
-        auth-input {
-          width: 100%;
-          padding: 12px 16px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          color: #fff;
-          font-size: 14px;
-          transition: all 0.3s;
-        }
-          .auth-input:focus {
+    .auth-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .auth-input:focus {
       outline: none;
       border-color: #3b82f6;
       background: rgba(255, 255, 255, 0.08);
@@ -1204,8 +1322,8 @@ export default function Home() {
       }
 
       .footer-section {
-      display: flex;
-      justify-content: center;
+        display: flex;
+        justify-content: center;
       }
     }
 
@@ -1223,8 +1341,8 @@ export default function Home() {
         height: 300px;
       }
 
-       .mobile-hide{
-          display: none;
+      .mobile-hide{
+        display: none;
       }
 
       .carousel-title {
@@ -1256,7 +1374,7 @@ export default function Home() {
 
       .mobile-hide{
         display: none !important;
-        }
+      }
 
       .header-logo {
         height: 32px;
@@ -1513,7 +1631,6 @@ export default function Home() {
             </a>
             <a className="social-icon" href="https://t.me/aniblauzbrinchiuzfandub" target="_blank" rel="noopener noreferrer" title="Telegram">
               <FaTelegramPlane  size={20}/>
-
             </a>
             <a className="social-icon" href="https://instagram.com/mochitv_uz" target="_blank" rel="noopener noreferrer" title="Instagram">
               <LuInstagram size={20} />
