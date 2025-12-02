@@ -12,11 +12,6 @@
   ],
   "rootMainFiles": [],
   "pages": {
-    "/": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/index.js"
-    ],
     "/_app": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
@@ -27,15 +22,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/anime/[slug]": [
+    "/admin/admin": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/anime/[slug].js"
+      "static/chunks/pages/admin/admin.js"
     ],
-    "/info/info": [
+    "/admin/episodes": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/info/info.js"
+      "static/chunks/pages/admin/episodes.js"
     ]
   },
   "ampFirstPages": []

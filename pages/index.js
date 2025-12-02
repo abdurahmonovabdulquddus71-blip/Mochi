@@ -871,7 +871,7 @@ export default function Home() {
 
         .card-like-btn.liked {
           background: rgba(239, 68, 68, 0.8);
-          color: #ff0000;
+          color: #fff;
         }
 
         .card-overlay {
