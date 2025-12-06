@@ -1,7 +1,1 @@
-{
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
-  "/anime/[slug]": "pages/anime/[slug].js",
-  "/": "pages/index.js"
-}
+{"/_document":"pages/_document.js","/admin/admin":"pages/admin/admin.html","/admin/episodes":"pages/admin/episodes.html","/anime/[slug]":"pages/anime/[slug].html","/api/delete-video":"pages/api/delete-video.js","/api/stream":"pages/api/stream.js","/_app":"pages/_app.js","/info/info":"pages/info/info.html","/":"pages/index.html","/users":"pages/users.html","/profile/[username]":"pages/profile/[username].html","/_error":"pages/_error.js","/api/upload-image":"pages/api/upload-image.js","/api/upload-video":"pages/api/upload-video.js","/404":"pages/404.html"}

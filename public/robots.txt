@@ -1,0 +1,15 @@
+# *
+User-agent: *
+Disallow: /admin
+Disallow: /api
+
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://www.mochitv.uz
+
+# Sitemaps
+Sitemap: https://www.mochitv.uz/sitemap.xml
+Sitemap: https://www.mochitv.uz/server-sitemap.xml
