@@ -134,9 +134,10 @@ function AuthModal({ mode, onClose, onLogin, onRegister, loading }) {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-input-group">
-            <label className="auth-label">Username</label>
+            <label className="auth-label">Username  max 10 harflik</label>
             <input
               type="text"
+              maxLength={10}
               className="auth-input"
               placeholder="Username kiriting"
               value={username}
@@ -563,7 +564,7 @@ export default function Home() {
         <meta property="og:url" content="https://mochitv.uz" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      
+
       <style jsx global>{`
         * {
           box-sizing: border-box;
