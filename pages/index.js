@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Heart, LogOut, Lock, Loader, Eye, Play, Youtube, X, Search } from 'lucide-react';
 import { FaTelegramPlane } from "react-icons/fa";
 import { LuInstagram } from "react-icons/lu";
+import Head from "next/head";
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://itxndrvoolbvzdseuljx.supabase.co';
@@ -550,7 +551,19 @@ export default function Home() {
   const hasMore = displayedAnimes.length < animeCards.length;
 
   return (
+    
     <>
+    <Head>
+        <title>MochiTV — Eng zo‘r anime tomosha sayti</title>
+        <meta name="description" content="MochiTV — o‘zbekcha tarjima anime, yuqori sifatda tomosha qiling. Har kuni yangi qo‘shiladi." />
+        <meta name="keywords" content="anime uz, ozbekcha anime, tarjima anime, mochi tv, mochitv" />
+        <meta property="og:title" content="MochiTV — Anime tomosha qiling" />
+        <meta property="og:description" content="Yangi anime, yuqori sifat, o‘zbekcha tarjimalar." />
+        <meta property="og:image" content="https://mochitv.uz/mochi-og.jpg" />
+        <meta property="og:url" content="https://mochitv.uz" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      
       <style jsx global>{`
         * {
           box-sizing: border-box;
