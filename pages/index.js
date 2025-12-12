@@ -555,14 +555,15 @@ export default function Home() {
     
     <>
     <Head>
-        <title>MochiTV — Eng zo‘r anime tomosha sayti</title>
-        <meta name="description" content="MochiTV — o‘zbekcha tarjima anime, yuqori sifatda tomosha qiling. Har kuni yangi qo‘shiladi." />
+        <title>MochiTV — Cheksiz Anime Dunyosiga Kirish | Yangi Premyeralar, Klassik Anime, O‘zbekcha Tarjima va Full HD Sifat</title>
+        <meta name="description" content="MochiTV — yangi premyeralar, mashhur klassiklar va o‘zbekcha tarjima qilingan anime seriyalarini Full HD sifatda tomosha qilish uchun eng qulay platforma. Tez serverlar, bepul tomosha va muntazam yangilanadigan kontent — barchasi bir joyda. Sevimli animelarni istalgan vaqtda zavq bilan tomosha qiling." />
         <meta name="keywords" content="anime uz, ozbekcha anime, tarjima anime, mochi tv, mochitv" />
         <meta property="og:title" content="MochiTV — Anime tomosha qiling" />
         <meta property="og:description" content="Yangi anime, yuqori sifat, o‘zbekcha tarjimalar." />
         <meta property="og:image" content="https://mochitv.uz/mochi-og.jpg" />
         <meta property="og:url" content="https://mochitv.uz" />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
       </Head>
 
       <style jsx global>{`
