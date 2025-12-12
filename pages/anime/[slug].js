@@ -40,13 +40,9 @@ export default function AnimeDetail() {
   const [shareModal, setShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [randomAnimes, setRandomAnimes] = useState([]);
-  const [showPrerollAd, setShowPrerollAd] = useState(false);
-  const [adCountdown, setAdCountdown] = useState(7);
   const playerRef = useRef(null);
   const videoContainerRef = useRef(null);
-  const prerollAdRef = useRef(null);
   const nativeBannerRef = useRef(null);
-  const adLoadedRef = useRef(false);
   const playerInitializedRef = useRef(false);
   const adScriptLoadedRef = useRef(false);
 
@@ -62,7 +58,7 @@ export default function AnimeDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (videoUrl && anime && !showPrerollAd) {
+    if (videoUrl && anime) {
       playerInitializedRef.current = false;
       const timer = setTimeout(() => {
         initializePlayer();
@@ -70,60 +66,7 @@ export default function AnimeDetail() {
       
       return () => clearTimeout(timer);
     }
-  }, [videoUrl, anime, showPrerollAd]);
-
-  useEffect(() => {
-    if (showPrerollAd && adCountdown > 0) {
-      const timer = setTimeout(() => {
-        setAdCountdown(adCountdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (showPrerollAd && adCountdown === 0) {
-      handleSkipAd();
-    }
-  }, [showPrerollAd, adCountdown]);
-
-  useEffect(() => {
-    if (showPrerollAd && prerollAdRef.current && !adLoadedRef.current) {
-      adLoadedRef.current = true;
-      
-      prerollAdRef.current.innerHTML = '';
-      
-      const adLoadTimeout = setTimeout(() => {
-        if (prerollAdRef.current && prerollAdRef.current.children.length === 0) {
-          const fallbackDiv = document.createElement('div');
-          fallbackDiv.style.cssText = 'width: 100%; height: 250px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); font-size: 14px;';
-          fallbackDiv.innerHTML = 'Reklama yuklanmoqda...';
-          prerollAdRef.current.appendChild(fallbackDiv);
-        }
-      }, 2000);
-
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.innerHTML = `
-        atOptions = {
-          'key' : '9611ac376b0e86e6d6e8e97d447bfffa',
-          'format' : 'iframe',
-          'height' : 250,
-          'width' : 300,
-          'params' : {}
-        };
-      `;
-      prerollAdRef.current.appendChild(script);
-
-      const invokeScript = document.createElement('script');
-      invokeScript.type = 'text/javascript';
-      invokeScript.src = '//www.highperformanceformat.com/9611ac376b0e86e6d6e8e97d447bfffa/invoke.js';
-      invokeScript.async = true;
-      invokeScript.onerror = () => {
-        console.log('Ad script failed to load');
-        clearTimeout(adLoadTimeout);
-      };
-      prerollAdRef.current.appendChild(invokeScript);
-
-      return () => clearTimeout(adLoadTimeout);
-    }
-  }, [showPrerollAd]);
+  }, [videoUrl, anime]);
 
   useEffect(() => {
     if (nativeBannerRef.current && !adScriptLoadedRef.current) {
@@ -143,12 +86,6 @@ export default function AnimeDetail() {
       nativeBannerRef.current.appendChild(adContainer);
     }
   }, [episodes]);
-
-  const handleSkipAd = () => {
-    setShowPrerollAd(false);
-    setAdCountdown(7);
-    adLoadedRef.current = false;
-  };
 
   const loadRandomAnimes = async () => {
     try {
@@ -374,7 +311,6 @@ export default function AnimeDetail() {
         if (firstVideoUrl) {
           const streamUrl = `/api/stream?fileName=${encodeURIComponent(firstVideoUrl)}`;
           setVideoUrl(streamUrl);
-          setShowPrerollAd(true);
         }
       } else {
         setEpisodes([]);
@@ -413,9 +349,6 @@ export default function AnimeDetail() {
     if (episode.video_url) {
       const streamUrl = `/api/stream?fileName=${encodeURIComponent(episode.video_url)}`;
       setVideoUrl(streamUrl);
-      setShowPrerollAd(true);
-      setAdCountdown(7);
-      adLoadedRef.current = false;
     }
   };
 
@@ -872,192 +805,90 @@ export default function AnimeDetail() {
           color: rgba(255, 255, 255, 0.6);
         }
 
-        .preroll-ad-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.98);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-          animation: fadeIn 0.3s ease;
-        }
-
-        .preroll-ad-container {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 20px;
-          width: 90%;
-          max-width: 600px;
-        }
-
-        .preroll-ad-content {
-          background: rgba(255, 255, 255, 0.05);
-          padding: 20px;
-          border-radius: 16px;
-          border: 2px solid rgba(59, 130, 246, 0.3);
-          width: 80%;
-          min-height: 280px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .preroll-skip-info {
-          color: rgba(255, 255, 255, 0.8);
-          font-size: 16px;
-          text-align: center;
-          margin-top: 15px;
-          font-weight: 500;
-        }
-
-        .preroll-countdown {
-          font-size: 24px;
-          font-weight: 700;
-          color: #3b82f6;
-          display: inline-block;
-          margin: 0 5px;
-        }
-
         @media (max-width: 768px) {
           .random-grid-mobile {
             grid-template-columns: repeat(2, 1fr) !important;
           }
 
-          .preroll-ad-content {
-            min-height: 250px;
-            width: 100%;
-          }
-            .plyr__controls{
+          .plyr__controls{
             font-size:10px;
-            }
-            
-            .plyr__progress {
-    position: absolute;
-    min-width: 90%;
-    bottom: 40px;
-    left: 0;
-    margin-left: 15px;
-}
-
-          
-
-          .preroll-skip-info {
-            font-size: 14px;
           }
-
-          .preroll-countdown {
-            font-size: 20px;
+            
+          .plyr__progress {
+            position: absolute;
+            min-width: 90%;
+            bottom: 40px;
+            left: 0;
+            margin-left: 15px;
           }
 
           @media (max-width: 385px) {
-          .plyr__progress{
+            .plyr__progress{
               bottom: 36px;
-
+            }
           }
         }
       `}</style>
 
-      {showPrerollAd && (
-        <div className="preroll-ad-overlay">
-<div className="preroll-ad-container">
-<div className="preroll-ad-content" ref={prerollAdRef}>
+      {shareModal && (
+        <div className="share-modal-overlay" onClick={() => setShareModal(false)}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="share-header">
+              <h2 className="share-title">Ulashish</h2>
+              <button className="share-close" onClick={() => setShareModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', marginBottom: '20px' }}>
+              {anime.title}
+            </div>
+
+            <div className="share-buttons">
+              <button className="share-btn" onClick={copyToClipboard}>
+                <div className="share-icon copy-icon">
+                  {copied ? <Check size={24} /> : <Copy size={24} />}
+                </div>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div>{copied ? 'Nusxalandi!' : 'Link nusxalash'}</div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+                    Linkni buferga nusxalash
+                  </div>
+                </div>
+              </button>
+
+              <button className="share-btn" onClick={shareToTelegram}>
+                <div className="share-icon telegram-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.67-.52.36-.99.53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.73 3.99-1.74 6.65-2.89 7.97-3.45 3.79-1.58 4.58-1.86 5.09-1.87.11 0 .37.03.54.17.14.11.18.26.2.37.02.06.04.21.02.33z"/>
+                  </svg>
+                </div>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div>Telegram orqali ulashish</div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+                    Do'stlaringiz bilan baham ko'ring
+                  </div>
+                </div>
+              </button>
+
+              <button className="share-btn" onClick={shareToWhatsApp}>
+                <div className="share-icon whatsapp-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+</svg>
 </div>
-<div className="preroll-skip-info">
-{adCountdown > 0 ? (
-<>
-Reklama <span className="preroll-countdown">{adCountdown}</span> soniyadan keyin o'tkazib yuboriladi...
-</>
-) : (
-<button
-style={{
-background: 'linear-gradient(135deg, #3b82f6,#2563eb)',
-border: 'none',
-color: '#fff',
-padding: '14px 35px',
-borderRadius: '12px',
-cursor: 'pointer',
-fontSize: '16px',
-fontWeight: '600',
-transition: 'all 0.3s',
-boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)',
-}}
-onClick={handleSkipAd}
-onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
->
-Davom etish →
+<div style={{ flex: 1, textAlign: 'left' }}>
+<div>WhatsApp orqali ulashish</div>
+<div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+Do'stlaringiz bilan baham ko'ring
+</div>
+</div>
 </button>
-)}
 </div>
 </div>
 </div>
 )}
-{shareModal && (
-    <div className="share-modal-overlay" onClick={() => setShareModal(false)}>
-      <div className="share-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="share-header">
-          <h2 className="share-title">Ulashish</h2>
-          <button className="share-close" onClick={() => setShareModal(false)}>
-            <X size={20} />
-          </button>
-        </div>
-
-        <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', marginBottom: '20px' }}>
-          {anime.title}
-        </div>
-
-        <div className="share-buttons">
-          <button className="share-btn" onClick={copyToClipboard}>
-            <div className="share-icon copy-icon">
-              {copied ? <Check size={24} /> : <Copy size={24} />}
-            </div>
-            <div style={{ flex: 1, textAlign: 'left' }}>
-              <div>{copied ? 'Nusxalandi!' : 'Link nusxalash'}</div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
-                Linkni buferga nusxalash
-              </div>
-            </div>
-          </button>
-
-          <button className="share-btn" onClick={shareToTelegram}>
-            <div className="share-icon telegram-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.67-.52.36-.99.53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.73 3.99-1.74 6.65-2.89 7.97-3.45 3.79-1.58 4.58-1.86 5.09-1.87.11 0 .37.03.54.17.14.11.18.26.2.37.02.06.04.21.02.33z"/>
-              </svg>
-            </div>
-            <div style={{ flex: 1, textAlign: 'left' }}>
-              <div>Telegram orqali ulashish</div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
-                Do'stlaringiz bilan baham ko'ring
-              </div>
-            </div>
-          </button>
-
-          <button className="share-btn" onClick={shareToWhatsApp}>
-            <div className="share-icon whatsapp-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-              </svg>
-            </div>
-            <div style={{ flex: 1, textAlign: 'left' }}>
-              <div>WhatsApp orqali ulashish</div>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
-                Do'stlaringiz bilan baham ko'ring
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
-
-  <button style={styles.backBtn} onClick={() => router.push('/')}>
+<button style={styles.backBtn} onClick={() => router.push('/')}>
     <ArrowLeft size={20} />
     Orqaga
   </button>
@@ -1440,7 +1271,7 @@ alignItems: 'center',
 },
 randomGrid: {
 display: 'grid',
-gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
 gap: '15px',
 },
 description: {
