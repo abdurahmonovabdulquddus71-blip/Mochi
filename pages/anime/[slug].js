@@ -612,8 +612,8 @@ export default function AnimeDetail() {
         }
 
         .plyr__control--overlaid {
-          border:3px solid;
-          background: none !important;
+          background: white !important;
+          color: #5b5be5 !important;
         }
 
         .plyr__control:focus {
