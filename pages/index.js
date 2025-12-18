@@ -1245,11 +1245,6 @@ export default function Home() {
           gap: 8px;
         }
 
-        .load-more-btn:hover {
-        background: white;
-        color: black;
-          
-        }
 
         .footer {
           background: rgba(0, 0, 0, 0.95);
