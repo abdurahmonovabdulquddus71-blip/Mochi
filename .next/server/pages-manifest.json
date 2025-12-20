@@ -2,8 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/admin/episodes": "pages/admin/episodes.js",
+  "/api/upload-video": "pages/api/upload-video.js",
   "/admin/admin": "pages/admin/admin.js",
-  "/anime/[slug]": "pages/anime/[slug].js"
+  "/admin/episodes": "pages/admin/episodes.js",
+  "/": "pages/index.js"
 }

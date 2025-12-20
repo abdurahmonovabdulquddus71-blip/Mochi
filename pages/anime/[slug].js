@@ -1037,7 +1037,7 @@ Do'stlaringiz bilan baham ko'ring
 
     {randomAnimes.length > 0 && (
       <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Boshqa animelar</h3>
+        <h3 style={styles.sectionTitle}>✨Tavsiya etilgan animelar</h3>
         <div style={styles.randomGrid} className="random-grid-mobile">
           {randomAnimes.map((randomAnime) => (
             <div
