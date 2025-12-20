@@ -1959,7 +1959,7 @@ export default function Home() {
                 <a className="social-icon" href="https://youtube.com/@MochiTvUz" target="_blank" rel="noopener noreferrer" title="YouTube">
                   <Youtube size={20} />
                 </a>
-                <a className="social-icon" href="https://t.me/aniblauzbrinchiuzfandub" target="_blank" rel="noopener noreferrer" title="Telegram">
+                <a className="social-icon" href="https://t.me/MochitvUz" target="_blank" rel="noopener noreferrer" title="Telegram">
                   <FaTelegramPlane size={20} />
                 </a>
                 <a className="social-icon" href="https://instagram.com/mochitv_uz" target="_blank" rel="noopener noreferrer" title="Instagram">
