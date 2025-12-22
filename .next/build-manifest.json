@@ -27,15 +27,10 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/admin/admin": [
+    "/profile/[username]": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/admin/admin.js"
-    ],
-    "/admin/episodes": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/admin/episodes.js"
+      "static/chunks/pages/profile/[username].js"
     ]
   },
   "ampFirstPages": []

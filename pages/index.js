@@ -11,6 +11,64 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const LOGO_URL = '/assets/lego.png';
 
+// Skeleton Card Component
+const SkeletonCard = () => (
+  <div className="anime-card-skeleton">
+    <div className="skeleton-image" />
+    <div className="skeleton-text" />
+  </div>
+);
+
+// Individual Anime Card with Image Loading logic
+function AnimeCard({ anime, allViews, favorites, toggleFavorite, goToAnime }) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  return (
+    <div className="anime-card" onClick={() => goToAnime(anime)}>
+      <div className="card-image-wrapper">
+        {!imageLoaded && <div className="skeleton-image-overlay" />}
+        <img 
+          className={`card-image ${imageLoaded ? 'loaded' : 'loading'}`} 
+          src={anime.image_url} 
+          alt={anime.title} 
+          onLoad={() => setImageLoaded(true)}
+        />
+        
+        <div className="card-header">
+          <div className="card-views">
+            <Eye size={14} />
+            <span>{allViews[anime.id] || 0}</span>
+          </div>
+          <button 
+            className={`card-like-btn ${favorites.includes(anime.id) ? 'liked' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(anime.id);
+            }}
+          >
+            <Heart size={16} fill={favorites.includes(anime.id) ? 'currentColor' : 'none'} />
+          </button>
+        </div>
+        
+        <div className="card-overlay">
+          <div className="card-overlay-info">
+            <div className="card-overlay-meta">
+              <div className="card-rating">
+                <span>⭐ {anime.rating}</span>
+              </div>
+              <div className="card-episodes">{anime.episodes} qism</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="card-content">
+        <div className="card-title">{anime.title}</div>
+      </div>
+    </div>
+  );
+}
+
 // Search Modal Component
 function SearchModal({ onClose, animeCards, onAnimeClick, allViews }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -599,6 +657,58 @@ export default function Home() {
           background-color: rgba(255, 255, 255, 0.05);
         }
 
+        /* Skeleton Styles */
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+
+        .skeleton-image-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, #121212 25%, #1a1a1a 50%, #121212 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+          z-index: 1;
+        }
+
+        .anime-card-skeleton {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .skeleton-image {
+          width: 100%;
+          aspect-ratio: 2/3;
+          border-radius: 20px;
+          background: linear-gradient(90deg, #121212 25%, #1a1a1a 50%, #121212 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
+
+        .skeleton-text {
+          height: 20px;
+          width: 80%;
+          border-radius: 4px;
+          background: linear-gradient(90deg, #121212 25%, #1a1a1a 50%, #121212 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
+
+        .card-image {
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+
+        .card-image.loaded {
+          opacity: 1;
+        }
+
         .container {
           width: 100%;
           min-height: 100vh;
@@ -1105,6 +1215,7 @@ export default function Home() {
           position: relative;
           overflow: hidden;
           border-radius: 20px;
+          background: #1a1a1a;
         }
 
         .card-image {
@@ -1834,51 +1945,22 @@ export default function Home() {
           </div>
           <div className="cards-grid">
             {loading ? (
-              <div className="loader-container" style={{ gridColumn: '1 / -1' }}>
-                <Loader className="animate-spin" size={48} color="#3b82f6" />
-              </div>
+              // Initial Loading Skeletons
+              Array(isMobile ? 12 : 15).fill(0).map((_, i) => <SkeletonCard key={i} />)
             ) : animeCards.length === 0 ? (
               <div className="empty-state">
                 <div>Hali anime qo'shilmagan</div>
               </div>
             ) : (
               displayedAnimes.map((anime) => (
-                <div key={anime.id} className="anime-card" onClick={() => goToAnime(anime)}>
-                  <div className="card-image-wrapper">
-                    <img className="card-image" src={anime.image_url} alt={anime.title} />
-                    
-                    <div className="card-header">
-                      <div className="card-views">
-                        <Eye size={14} />
-                        <span>{allViews[anime.id] || 0}</span>
-                      </div>
-                      <button 
-                        className={`card-like-btn ${favorites.includes(anime.id) ? 'liked' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(anime.id);
-                        }}
-                      >
-                        <Heart size={16} fill={favorites.includes(anime.id) ? 'currentColor' : 'none'} />
-                      </button>
-                    </div>
-                    
-                    <div className="card-overlay">
-                      <div className="card-overlay-info">
-                        <div className="card-overlay-meta">
-                          <div className="card-rating">
-                            <span>⭐ {anime.rating}</span>
-                          </div>
-                          <div className="card-episodes">{anime.episodes} qism</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="card-content">
-                    <div className="card-title">{anime.title}</div>
-                  </div>
-                </div>
+                <AnimeCard 
+                  key={anime.id} 
+                  anime={anime}
+                  allViews={allViews}
+                  favorites={favorites}
+                  toggleFavorite={toggleFavorite}
+                  goToAnime={goToAnime}
+                />
               ))
             )}
           </div>
