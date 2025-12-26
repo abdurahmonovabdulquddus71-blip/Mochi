@@ -3,5 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/profile/[username]": "pages/profile/[username].js"
+  "/api/stream": "pages/api/stream.js",
+  "/anime/[slug]": "pages/anime/[slug].js"
 }
