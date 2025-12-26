@@ -2025,15 +2025,15 @@ export default function Home() {
           <div className="footer-section">
             <div className="footer-col">
               <div className="footer-title">MochiTV Haqida</div>
-              <a href="/info/info" className="footer-link">Biz haqimizda</a>
-              <a href="/info/info" className="footer-link">Aloqa</a>
-              <a href="/info/info" className="footer-link">Muammo Xabar Qilish</a>
+              <a href="/info" className="footer-link">Biz haqimizda</a>
+              <a href="/info" className="footer-link">Aloqa</a>
+              <a href="/info" className="footer-link">Muammo Xabar Qilish</a>
             </div>
             <div className="footer-col">
               <div className="footer-title">Yordam</div>
-              <a href="/info/info" className="footer-link">FAQ</a>
-              <a href="/info/info" className="footer-link">Qo'llanma</a>
-              <a href="/info/info" className="footer-link">Shartlar va Shartlar</a>
+              <a href="/info" className="footer-link">FAQ</a>
+              <a href="/info" className="footer-link">Qo'llanma</a>
+              <a href="/info" className="footer-link">Shartlar va Shartlar</a>
             </div>
             <div className="footer-col mobile-hide">
               <div className="footer-title">Ijtimoiy Tarmoqlar</div>

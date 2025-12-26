@@ -105,19 +105,9 @@ export default function AnimeDetail() {
   };
 
   const destroyPlayer = () => {
-    if (playerRef.current) {
-      try {
-        playerRef.current.destroy();
-      } catch (e) {
-        console.log('Player cleanup:', e);
-      }
-      playerRef.current = null;
-    }
-
     if (videoContainerRef.current) {
       videoContainerRef.current.innerHTML = '';
     }
-
     playerInitializedRef.current = false;
   };
 
@@ -128,97 +118,47 @@ export default function AnimeDetail() {
 
     destroyPlayer();
 
-    if (!videoContainerRef.current || typeof window === 'undefined' || !window.Plyr) {
+    if (!videoContainerRef.current || typeof window === 'undefined') {
       setTimeout(initializePlayer, 300);
       return;
     }
 
+    // Vidstack Player initialization using Web Components
     videoContainerRef.current.innerHTML = `
-      <video
-        id="plyr-player-${Date.now()}"
-        playsinline
-        controls
+      <media-player
+        title="${anime?.title || 'Anime'}"
+        src="${videoUrl}"
+        aspect-ratio="16/9"
+        load="visible"
+        crossorigin
       >
-        <source src="${videoUrl}" type="video/mp4" />
-      </video>
+        <media-provider></media-provider>
+        <media-video-layout></media-video-layout>
+      </media-player>
     `;
 
-    const videoElement = videoContainerRef.current.querySelector('video');
-    if (!videoElement) {
-      return;
-    }
-
-    try {
-      const player = new window.Plyr(videoElement, {
-        controls: [
-          'play-large',
-          'play',
-          'progress',
-          'current-time',
-          'current',
-          'duration',
-          'settings',
-          'fullscreen'
-        ],
-        settings: ['quality', 'speed'],
-        quality: {
-          default: 720,
-          options: [1080, 720, 480, 360]
-        },
-        speed: {
-          selected: 1,
-          options: [0.5, 0.75, 1, 1.25, 1.5, 2]
-        },
-        fullscreen: {
-          enabled: true,
-          fallback: true,
-          iosNative: true
-        },
-        ratio: '16:9',
-        storage: {
-          enabled: false
-        },
-        keyboard: {
-          focused: true,
-          global: true
-        },
-        tooltips: {
-          controls: true,
-          seek: true
-        },
-        hideControls: true,
-        resetOnEnd: false,
-        autoplay: false,
-        muted: false,
-        volume: 0.8
-      });
-
-      player.on('ready', () => {
+    const player = videoContainerRef.current.querySelector('media-player');
+    
+    if (player) {
+      player.addEventListener('can-play', () => {
         playerInitializedRef.current = true;
-        console.log('Plyr player ready');
       });
 
-      player.on('enterfullscreen', () => {
-        if (window.innerWidth < 768) {
+      // Fullscreen orientation handling
+      player.addEventListener('fullscreen-change', (event) => {
+        const isFullscreen = event.detail;
+        if (isFullscreen && window.innerWidth < 768) {
           if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape').catch(err => {
-              console.log('Orientation lock error:', err);
-            });
+            screen.orientation.lock('landscape').catch(() => {});
+          }
+        } else if (!isFullscreen) {
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
           }
         }
       });
 
-      player.on('exitfullscreen', () => {
-        if (screen.orientation && screen.orientation.unlock) {
-          screen.orientation.unlock();
-        }
-      });
-
       playerRef.current = player;
-
-    } catch (error) {
-      console.error('Plyr player error:', error);
-      playerInitializedRef.current = false;
     }
   };
 
@@ -476,8 +416,10 @@ export default function AnimeDetail() {
         <meta name="author" content="Anime Uzbek" />
         <link rel="canonical" href={typeof window !== 'undefined' ? window.location.href : ''} />
         
-        <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-        <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+        {/* Vidstack Player Assets */}
+        <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+        <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+        <script src="https://cdn.vidstack.io/player" type="module"></script>
     
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         
@@ -586,62 +528,13 @@ export default function AnimeDetail() {
           height: 100%;
         }
 
-        .plyr {
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
+        media-player {
+          --media-brand: #3b82f6;
+          --media-focus-ring-color: #3b82f6;
+          width: 100%;
+          height: 100%;
           border-radius: 12px;
-        }
-
-        .plyr__video-wrapper {
-          background: #000;
-        }
-
-        .plyr video {
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: contain;
-        }
-
-        .plyr--fullscreen video {
-          width: 100vw !important;
-          height: 100vh !important;
-          object-fit: contain !important;
-        }
-
-        .plyr__control--overlaid {
-          background: white !important;
-          color: #5b5be5 !important;
-        }
-
-        .plyr__control:focus {
-          background: none !important;
-        }
-
-        .plyr__controls {
-          background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-        }
-
-        .plyr__control {
-          color: #fff;
-        }
-
-        .plyr__control:hover {
-        background: none !important;
-        }
-
-        .plyr__progress__buffer {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
-        .plyr__progress input[type=range] {
-          color: rgba(59, 130, 246, 0.3);
-        }
-
-        .plyr__volume input[type=range] {
-          color: #3b82f6;
+          overflow: hidden;
         }
 
         .episode-btn {
@@ -653,11 +546,7 @@ export default function AnimeDetail() {
             padding-top: 56.25%;
             border-radius: 8px;
           }
-            .plyr__time+.plyr__time{
-            display:block !important;
-            }
-
-          .plyr {
+          media-player {
             border-radius: 8px;
           }
         }
@@ -808,24 +697,6 @@ export default function AnimeDetail() {
         @media (max-width: 768px) {
           .random-grid-mobile {
             grid-template-columns: repeat(2, 1fr) !important;
-          }
-
-          .plyr__controls{
-            font-size:10px;
-          }
-            
-          .plyr__progress {
-            position: absolute;
-            min-width: 90%;
-            bottom: 40px;
-            left: 0;
-            margin-left: 15px;
-          }
-
-          @media (max-width: 385px) {
-            .plyr__progress{
-              bottom: 36px;
-            }
           }
         }
       `}</style>
