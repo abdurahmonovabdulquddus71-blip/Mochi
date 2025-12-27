@@ -1,4 +1,4 @@
-import fetch from "node-fetch";
+import { Buffer } from 'buffer';
 
 const B2_KEY_ID = "005388ef1432aec000000000f";
 const B2_APPLICATION_KEY = "K005ChhVWS9ULMO2oxsQwcZzJCZw6tk";
@@ -29,103 +29,112 @@ async function authenticateB2() {
   return data;
 }
 
-export default async function handler(req, res) {
-  try {
-    /* ================== DOMAIN HIMOYASI ================== */
-    const referer = req.headers.referer || "";
-    const origin = req.headers.origin || "";
-
-    if (
-      !referer.includes(ALLOWED_DOMAIN) &&
-      !origin.includes(ALLOWED_DOMAIN)
-    ) {
-      return res.status(403).json({ error: "Access denied" });
-    }
-
-    /* ================== URL TEKSHIRUV ================== */
-    const url = req.query.fileName;
-    if (!url) {
-      return res.status(400).json({ error: "fileName required" });
-    }
-
-    let parsedUrl;
+export default {
+  async fetch(req, env, ctx) {
     try {
-      parsedUrl = new URL(url);
-    } catch {
-      return res.status(400).json({ error: "Invalid URL" });
-    }
+      /* ================== DOMAIN HIMOYASI ================== */
+      const referer = req.headers.get('referer') || "";
+      const origin = req.headers.get('origin') || "";
 
-    if (!parsedUrl.hostname.includes(ALLOWED_B2_HOST)) {
-      return res.status(403).json({ error: "Invalid video source" });
-    }
+      if (
+        !referer.includes(ALLOWED_DOMAIN) &&
+        !origin.includes(ALLOWED_DOMAIN)
+      ) {
+        return new Response(JSON.stringify({ error: "Access denied" }), { status: 403 });
+      }
 
-    const b2 = await authenticateB2();
+      /* ================== URL TEKSHIRUV ================== */
+      const url = new URL(req.url);
+      const fileName = url.searchParams.get('fileName');
+      if (!fileName) {
+        return new Response(JSON.stringify({ error: "fileName required" }), { status: 400 });
+      }
 
-    /* ================== HEAD ================== */
-    const head = await fetch(url, {
-      method: "HEAD",
-      headers: { Authorization: b2.authorizationToken },
-    });
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(fileName);
+      } catch {
+        return new Response(JSON.stringify({ error: "Invalid URL" }), { status: 400 });
+      }
 
-    const size = parseInt(head.headers.get("content-length"));
-    const type = head.headers.get("content-type") || "video/mp4";
+      if (!parsedUrl.hostname.includes(ALLOWED_B2_HOST)) {
+        return new Response(JSON.stringify({ error: "Invalid video source" }), { status: 403 });
+      }
 
-    if (req.method === "HEAD") {
-      res.writeHead(200, {
-        "Content-Type": type,
-        "Content-Length": size,
-        "Accept-Ranges": "bytes",
+      const b2 = await authenticateB2();
+
+      /* ================== HEAD ================== */
+      const head = await fetch(fileName, {
+        method: "HEAD",
+        headers: { Authorization: b2.authorizationToken },
       });
-      return res.end();
-    }
 
-    const range = req.headers.range;
-    const CHUNK = 2 * 1024 * 1024;
+      const size = parseInt(head.headers.get("content-length"));
+      const type = head.headers.get("content-type") || "video/mp4";
 
-    let start = 0;
-    let end = Math.min(CHUNK, size - 1);
+      if (req.method === "HEAD") {
+        return new Response(null, {
+          status: 200,
+          headers: {
+            "Content-Type": type,
+            "Content-Length": size,
+            "Accept-Ranges": "bytes",
+          },
+        });
+      }
 
-    if (range) {
-      const [s, e] = range.replace(/bytes=/, "").split("-");
-      start = parseInt(s);
-      end = e ? parseInt(e) : Math.min(start + CHUNK, size - 1);
-    }
+      const range = req.headers.get('range');
+      const CHUNK = 2 * 1024 * 1024;
 
-    if (start >= size) {
-      res.writeHead(416, {
-        "Content-Range": `bytes */${size}`,
+      let start = 0;
+      let end = Math.min(CHUNK, size - 1);
+
+      if (range) {
+        const [s, e] = range.replace(/bytes=/, "").split("-");
+        start = parseInt(s);
+        end = e ? parseInt(e) : Math.min(start + CHUNK, size - 1);
+      }
+
+      if (start >= size) {
+        return new Response(null, {
+          status: 416,
+          headers: {
+            "Content-Range": `bytes */${size}`,
+          },
+        });
+      }
+
+      const chunkSize = end - start + 1;
+
+      /* ================== RESPONSE ================== */
+      const streamResponse = await fetch(fileName, {
+        headers: {
+          Authorization: b2.authorizationToken,
+          Range: `bytes=${start}-${end}`,
+        },
       });
-      return res.end();
+
+      return new Response(streamResponse.body, {
+        status: 206,
+        headers: {
+          "Content-Range": `bytes ${start}-${end}/${size}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type": type,
+
+          // DOWNLOADNI CHEKLASH
+          "Content-Disposition": "inline",
+
+          // BOSHQA SAYTLARGA YOPIQ
+          "Access-Control-Allow-Origin": `https://${ALLOWED_DOMAIN}`,
+
+          // CLOUDFLARE CACHE INTEGRATSIYASI: CACHE NI YOQISH UCHUN NO-STORE O'RNIGA PUBLIC MAX-AGE
+          "Cache-Control": "public, max-age=31536000, immutable", // 1 yil cache, o'zgarmas fayllar uchun
+        },
+      });
+    } catch (err) {
+      console.error("STREAM ERROR:", err.message);
+      return new Response(JSON.stringify({ error: "stream error" }), { status: 500 });
     }
-
-    const chunkSize = end - start + 1;
-
-    /* ================== RESPONSE ================== */
-    res.writeHead(206, {
-      "Content-Range": `bytes ${start}-${end}/${size}`,
-      "Accept-Ranges": "bytes",
-      "Content-Length": chunkSize,
-      "Content-Type": type,
-
-      // DOWNLOADNI CHEKLASH
-      "Content-Disposition": "inline",
-
-      // BOSHQA SAYTLARGA YOPIQ
-      "Access-Control-Allow-Origin": `https://${ALLOWED_DOMAIN}`,
-
-      "Cache-Control": "no-store",
-    });
-
-    const stream = await fetch(url, {
-      headers: {
-        Authorization: b2.authorizationToken,
-        Range: `bytes=${start}-${end}`,
-      },
-    });
-
-    stream.body.pipe(res);
-  } catch (err) {
-    console.error("STREAM ERROR:", err.message);
-    res.status(500).json({ error: "stream error" });
   }
-}
+};
