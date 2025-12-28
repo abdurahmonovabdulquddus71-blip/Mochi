@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 
-const B2_KEY_ID = "005388ef1432aec000000000f";
-const B2_APPLICATION_KEY = "K005ChhVWS9ULMO2oxsQwcZzJCZw6tk";
+const B2_KEY_ID = "005388ef1432aec0000000010";
+const B2_APPLICATION_KEY = "K005f6tbx4UCFl2fhp1hEuQcB0kEefo";
 
 let cachedAuth = null;
 let authExpiry = 0;
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     const range = req.headers.range;
 
     // DEFAULT: 8MB chunk
-    const CHUNK = 8 * 1024 * 1024;
+    const CHUNK = 5 * 1024 * 1024;
 
     let start = 0;
     let end = Math.min(CHUNK, size - 1);

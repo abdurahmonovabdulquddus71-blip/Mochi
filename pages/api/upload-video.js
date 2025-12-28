@@ -9,8 +9,8 @@ export const config = {
 };
 
 // ⚙️ Backblaze B2 sozlamalari
-const B2_KEY_ID = "005388ef1432aec000000000f";
-const B2_APPLICATION_KEY = "K005ChhVWS9ULMO2oxsQwcZzJCZw6tk";
+const B2_KEY_ID = "005388ef1432aec0000000010";
+const B2_APPLICATION_KEY = "K005f6tbx4UCFl2fhp1hEuQcB0kEefo";
 const B2_BUCKET_NAME = "malika-memory"; // bu to‘g‘risi defis bilan
 const B2_BUCKET_ID = "5388d88e9fc174c3929a0e1c"; // qo‘lda olingan bucket ID
 

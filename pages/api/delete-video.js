@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 
-const B2_KEY_ID = '005388ef1432aec000000000e';
-const B2_APPLICATION_KEY = 'K005pjX0KGQnQ4oqcIxAGRBLGWTzYzQ';
+const B2_KEY_ID = '005388ef1432aec0000000010';
+const B2_APPLICATION_KEY = 'K005f6tbx4UCFl2fhp1hEuQcB0kEefo';
 
 async function authenticateB2() {
   const auth = Buffer.from(`${B2_KEY_ID}:${B2_APPLICATION_KEY}`).toString('base64');
