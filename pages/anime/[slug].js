@@ -9,872 +9,898 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 let supabaseInstance = null;
 const getSupabase = () => {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-  }
-  return supabaseInstance;
+if (!supabaseInstance) {
+supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+auth: {
+persistSession: false,
+autoRefreshToken: false,
+},
+});
+}
+return supabaseInstance;
 };
 
 const supabase = getSupabase();
 
 export default function AnimeDetail() {
-  const router = useRouter();
-  const { id } = router.query;
-  const [anime, setAnime] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState([]);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [views, setViews] = useState(0);
-  const [comments, setComments] = useState([]);
-  const [commentText, setCommentText] = useState('');
-  const [descExpanded, setDescExpanded] = useState(false);
-  const [episodes, setEpisodes] = useState([]);
-  const [currentEpisode, setCurrentEpisode] = useState(1);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [shareModal, setShareModal] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [randomAnimes, setRandomAnimes] = useState([]);
-  const playerRef = useRef(null);
-  const videoContainerRef = useRef(null);
-  const nativeBannerRef = useRef(null);
-  const playerInitializedRef = useRef(false);
-  const adScriptLoadedRef = useRef(false);
+const router = useRouter();
+const { id } = router.query;
+const [anime, setAnime] = useState(null);
+const [loading, setLoading] = useState(true);
+const [favorites, setFavorites] = useState([]);
+const [isFavorite, setIsFavorite] = useState(false);
+const [currentUser, setCurrentUser] = useState(null);
+const [views, setViews] = useState(0);
+const [comments, setComments] = useState([]);
+const [commentText, setCommentText] = useState('');
+const [descExpanded, setDescExpanded] = useState(false);
+const [episodes, setEpisodes] = useState([]);
+const [currentEpisode, setCurrentEpisode] = useState(1);
+const [videoUrl, setVideoUrl] = useState('');
+const [shareModal, setShareModal] = useState(false);
+const [copied, setCopied] = useState(false);
+const [randomAnimes, setRandomAnimes] = useState([]);
+const playerRef = useRef(null);
+const videoContainerRef = useRef(null);
+const nativeBannerRef = useRef(null);
+const playerInitializedRef = useRef(false);
+const adScriptLoadedRef = useRef(false);
 
-  useEffect(() => {
-    checkCurrentUser();
-    if (id) {
-      loadAnimeDetail();
-      loadComments();
-      loadEpisodes();
-      loadViews();
-      loadRandomAnimes();
-    }
-  }, [id]);
+useEffect(() => {
+checkCurrentUser();
+if (id) {
+loadAnimeDetail();
+loadComments();
+loadEpisodes();
+loadViews();
+loadRandomAnimes();
+}
+}, [id]);
 
-  useEffect(() => {
-    if (videoUrl && anime) {
-      playerInitializedRef.current = false;
-      const timer = setTimeout(() => {
-        initializePlayer();
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [videoUrl, anime]);
+useEffect(() => {
+if (videoUrl && anime) {
+playerInitializedRef.current = false;
+const timer = setTimeout(() => {
+initializePlayer();
+}, 300);
 
-  useEffect(() => {
-    if (nativeBannerRef.current && !adScriptLoadedRef.current) {
-      adScriptLoadedRef.current = true;
-      
-      const script = document.createElement('script');
-      script.async = true;
-      script.setAttribute('data-cfasync', 'false');
-      script.src = '//pl28049626.effectivegatecpm.com/ceb154996d37408eb3007a0a9cea06aa/invoke.js';
-      script.onerror = () => {
-        console.log('Native banner script failed to load');
-      };
-      nativeBannerRef.current.appendChild(script);
 
-      const adContainer = document.createElement('div');
-      adContainer.id = 'container-ceb154996d37408eb3007a0a9cea06aa';
-      nativeBannerRef.current.appendChild(adContainer);
-    }
-  }, [episodes]);
+return () => clearTimeout(timer);
+}
+}, [videoUrl, anime]);
 
-  const loadRandomAnimes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('anime_cards')
-        .select('*')
-        .neq('id', id)
-        .limit(100);
+useEffect(() => {
+if (nativeBannerRef.current && !adScriptLoadedRef.current) {
+adScriptLoadedRef.current = true;
 
-      if (!error && data) {
-        const shuffled = data.sort(() => 0.5 - Math.random());
-        setRandomAnimes(shuffled.slice(0, 12));
-      }
-    } catch (error) {
-      console.error('Random anime load error:', error);
-    }
+
+const script = document.createElement('script');
+  script.async = true;
+  script.setAttribute('data-cfasync', 'false');
+  script.src = '//pl28049626.effectivegatecpm.com/ceb154996d37408eb3007a0a9cea06aa/invoke.js';
+  script.onerror = () => {
+    console.log('Native banner script failed to load');
   };
+  nativeBannerRef.current.appendChild(script);
 
-  const destroyPlayer = () => {
-    if (playerRef.current) {
-      try {
-        playerRef.current.destroy();
-      } catch (e) {
-        console.log('Player cleanup:', e);
+  const adContainer = document.createElement('div');
+  adContainer.id = 'container-ceb154996d37408eb3007a0a9cea06aa';
+  nativeBannerRef.current.appendChild(adContainer);
+}
+}, [episodes]);
+
+const loadRandomAnimes = async () => {
+try {
+const { data, error } = await supabase
+.from('anime_cards')
+.select('*')
+.neq('id', id)
+.limit(100);
+
+if (!error && data) {
+    const shuffled = data.sort(() => 0.5 - Math.random());
+    setRandomAnimes(shuffled.slice(0, 12));
+  }
+} catch (error) {
+  console.error('Random anime load error:', error);
+}
+};
+
+const destroyPlayer = () => {
+if (playerRef.current) {
+try {
+playerRef.current.destroy();
+} catch (e) {
+console.log('Player cleanup:', e);
+}
+playerRef.current = null;
+}
+
+
+if (videoContainerRef.current) {
+  videoContainerRef.current.innerHTML = '';
+}
+
+playerInitializedRef.current = false;
+};
+
+const initializePlayer = () => {
+if (playerInitializedRef.current) {
+return;
+}
+
+
+destroyPlayer();
+
+if (!videoContainerRef.current || typeof window === 'undefined' || !window.Plyr) {
+  setTimeout(initializePlayer, 300);
+  return;
+}
+
+videoContainerRef.current.innerHTML = `
+  <video
+    id="plyr-player-${Date.now()}"
+    playsinline
+    controls
+  >
+    <source src="${videoUrl}" type="video/mp4" />
+  </video>
+`;
+
+const videoElement = videoContainerRef.current.querySelector('video');
+if (!videoElement) {
+  return;
+}
+
+try {
+  const player = new window.Plyr(videoElement, {
+    controls: [
+      'play-large',
+      'play',
+      'progress',
+      'current-time',
+      'current',
+      'duration',
+      'settings',
+      'fullscreen'
+    ],
+    settings: ['quality', 'speed'],
+    quality: {
+      default: 720,
+      options: [1080, 720, 480, 360]
+    },
+    speed: {
+      selected: 1,
+      options: [0.5, 0.75, 1, 1.25, 1.5, 2]
+    },
+    fullscreen: {
+      enabled: true,
+      fallback: true,
+      iosNative: true
+    },
+    ratio: '16:9',
+    storage: {
+      enabled: false
+    },
+    keyboard: {
+      focused: true,
+      global: true
+    },
+    tooltips: {
+      controls: true,
+      seek: true
+    },
+    hideControls: true,
+    resetOnEnd: false,
+    autoplay: false,
+    muted: false,
+    volume: 0.8
+  });
+
+  player.on('ready', () => {
+    playerInitializedRef.current = true;
+    console.log('Plyr player ready');
+  });
+
+  player.on('enterfullscreen', () => {
+    if (window.innerWidth < 768) {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(err => {
+          console.log('Orientation lock error:', err);
+        });
       }
-      playerRef.current = null;
     }
+  });
 
-    if (videoContainerRef.current) {
-      videoContainerRef.current.innerHTML = '';
+  player.on('exitfullscreen', () => {
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
     }
+  });
 
-    playerInitializedRef.current = false;
-  };
+  playerRef.current = player;
 
-  const initializePlayer = () => {
-    if (playerInitializedRef.current) {
-      return;
-    }
+} catch (error) {
+  console.error('Plyr player error:', error);
+  playerInitializedRef.current = false;
+}
+};
 
-    destroyPlayer();
+const checkCurrentUser = async () => {
+try {
+const user = localStorage.getItem('anime_user');
+if (user) {
+const userData = JSON.parse(user);
+setCurrentUser(userData);
+await loadUserFavorites(userData.id);
+}
+} catch (error) {
+console.error('User check error:', error);
+}
+};
 
-    if (!videoContainerRef.current || typeof window === 'undefined' || !window.Plyr) {
-      setTimeout(initializePlayer, 300);
-      return;
-    }
+const loadUserFavorites = async (userId) => {
+try {
+const { data, error } = await supabase
+.from('user_favorites')
+.select('anime_id')
+.eq('user_id', userId);
 
-    videoContainerRef.current.innerHTML = `
-      <video
-        id="plyr-player-${Date.now()}"
-        playsinline
-        controls
-      >
-        <source src="${videoUrl}" type="video/mp4" />
-      </video>
-    `;
 
-    const videoElement = videoContainerRef.current.querySelector('video');
-    if (!videoElement) {
-      return;
-    }
+if (!error && data) {
+    const favIds = data.map(f => f.anime_id);
+    setFavorites(favIds);
+    setIsFavorite(favIds.includes(id));
+  }
+} catch (error) {
+  console.error('Load favorites error:', error);
+}
+};
 
-    try {
-      const player = new window.Plyr(videoElement, {
-        controls: [
-          'play-large',
-          'play',
-          'progress',
-          'current-time',
-          'current',
-          'duration',
-          'settings',
-          'fullscreen'
-        ],
-        settings: ['quality', 'speed'],
-        quality: {
-          default: 720,
-          options: [1080, 720, 480, 360]
-        },
-        speed: {
-          selected: 1,
-          options: [0.5, 0.75, 1, 1.25, 1.5, 2]
-        },
-        fullscreen: {
-          enabled: true,
-          fallback: true,
-          iosNative: true
-        },
-        ratio: '16:9',
-        storage: {
-          enabled: false
-        },
-        keyboard: {
-          focused: true,
-          global: true
-        },
-        tooltips: {
-          controls: true,
-          seek: true
-        },
-        hideControls: true,
-        resetOnEnd: false,
-        autoplay: false,
-        muted: false,
-        volume: 0.8
-      });
+const loadViews = async () => {
+try {
+const { data, error } = await supabase
+.from('anime_views')
+.select('view_count')
+.eq('anime_id', id);
 
-      player.on('ready', () => {
-        playerInitializedRef.current = true;
-        console.log('Plyr player ready');
-      });
+if (!error && data) {
+    const totalViews = data.reduce((sum, item) => sum + item.view_count, 0);
+    setViews(totalViews);
+  }
+} catch (error) {
+  console.error('Load views error:', error);
+}
+};
 
-      player.on('enterfullscreen', () => {
-        if (window.innerWidth < 768) {
-          if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape').catch(err => {
-              console.log('Orientation lock error:', err);
-            });
-          }
-        }
-      });
+const loadAnimeDetail = async () => {
+setLoading(true);
+try {
+const { data, error } = await supabase
+.from('anime_cards')
+.select('*')
+.eq('id', id)
+.single();
 
-      player.on('exitfullscreen', () => {
-        if (screen.orientation && screen.orientation.unlock) {
-          screen.orientation.unlock();
-        }
-      });
+if (error || !data) {
+    setLoading(false);
+    return;
+  }
 
-      playerRef.current = player;
+  setAnime(data);
+  setLoading(false);
+} catch (error) {
+  console.error('Anime load error:', error);
+  setLoading(false);
+}
+};
 
-    } catch (error) {
-      console.error('Plyr player error:', error);
-      playerInitializedRef.current = false;
-    }
-  };
+const loadEpisodes = async () => {
+try {
+const { data, error } = await supabase
+.from('anime_episodes')
+.select('*')
+.eq('anime_id', id)
+.order('episode_number', { ascending: true});
 
-  const checkCurrentUser = async () => {
-    try {
-      const user = localStorage.getItem('anime_user');
-      if (user) {
-        const userData = JSON.parse(user);
-        setCurrentUser(userData);
-        await loadUserFavorites(userData.id);
-      }
-    } catch (error) {
-      console.error('User check error:', error);
-    }
-  };
 
-  const loadUserFavorites = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_favorites')
-        .select('anime_id')
-        .eq('user_id', userId);
+if (error) {
+    setEpisodes([]);
+    return;
+  }
 
-      if (!error && data) {
-        const favIds = data.map(f => f.anime_id);
-        setFavorites(favIds);
-        setIsFavorite(favIds.includes(id));
-      }
-    } catch (error) {
-      console.error('Load favorites error:', error);
-    }
-  };
-
-  const loadViews = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('anime_views')
-        .select('view_count')
-        .eq('anime_id', id);
-
-      if (!error && data) {
-        const totalViews = data.reduce((sum, item) => sum + item.view_count, 0);
-        setViews(totalViews);
-      }
-    } catch (error) {
-      console.error('Load views error:', error);
-    }
-  };
-
-  const loadAnimeDetail = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('anime_cards')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error || !data) {
-        setLoading(false);
-        return;
-      }
-
-      setAnime(data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Anime load error:', error);
-      setLoading(false);
-    }
-  };
-
-  const loadEpisodes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('anime_episodes')
-        .select('*')
-        .eq('anime_id', id)
-        .order('episode_number', { ascending: true});
-
-      if (error) {
-        setEpisodes([]);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        setEpisodes(data);
-        setCurrentEpisode(data[0].episode_number);
-        
-        const firstVideoUrl = data[0].video_url;
-        if (firstVideoUrl) {
-          const streamUrl = `/api/stream?fileName=${encodeURIComponent(firstVideoUrl)}`;
-          setVideoUrl(streamUrl);
-        }
-      } else {
-        setEpisodes([]);
-      }
-    } catch (error) {
-      console.error('Episodes load error:', error);
-      setEpisodes([]);
-    }
-  };
-
-  const loadComments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('anime_comments')
-        .select('*')
-        .eq('anime_id', id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setComments([]);
-        return;
-      }
-
-      setComments(data || []);
-    } catch (error) {
-      console.error('Comments load error:', error);
-      setComments([]);
-    }
-  };
-
-  const selectEpisode = (episode) => {
-    destroyPlayer();
+  if (data && data.length > 0) {
+    setEpisodes(data);
+    setCurrentEpisode(data[0].episode_number);
     
-    setCurrentEpisode(episode.episode_number);
-    
-    if (episode.video_url) {
-      const streamUrl = `/api/stream?fileName=${encodeURIComponent(episode.video_url)}`;
+    const firstVideoUrl = data[0].video_url;
+    if (firstVideoUrl) {
+      const streamUrl = `/api/stream?fileName=${encodeURIComponent(firstVideoUrl)}`;
       setVideoUrl(streamUrl);
     }
-  };
+  } else {
+    setEpisodes([]);
+  }
+} catch (error) {
+  console.error('Episodes load error:', error);
+  setEpisodes([]);
+}
+};
 
-  const toggleFavorite = async () => {
-    if (!anime || !currentUser) {
-      return;
+const loadComments = async () => {
+try {
+const { data, error } = await supabase
+.from('anime_comments')
+.select('*')
+.eq('anime_id', id)
+.order('created_at', { ascending: false });
+
+
+if (error) {
+    setComments([]);
+    return;
+  }
+
+  setComments(data || []);
+} catch (error) {
+  console.error('Comments load error:', error);
+  setComments([]);
+}
+};
+
+const selectEpisode = (episode) => {
+destroyPlayer();
+
+
+setCurrentEpisode(episode.episode_number);
+
+if (episode.video_url) {
+  const streamUrl = `/api/stream?fileName=${encodeURIComponent(episode.video_url)}`;
+  setVideoUrl(streamUrl);
+}
+};
+
+const toggleFavorite = async () => {
+if (!anime || !currentUser) {
+return;
+}
+
+
+try {
+  if (isFavorite) {
+    const { error } = await supabase
+      .from('user_favorites')
+      .delete()
+      .eq('user_id', currentUser.id)
+      .eq('anime_id', anime.id);
+
+    if (!error) {
+      setFavorites(favorites.filter(id => id !== anime.id));
+      setIsFavorite(false);
+    }
+  } else {
+    const { error } = await supabase
+      .from('user_favorites')
+      .insert([{ user_id: currentUser.id, anime_id: anime.id }]);
+
+    if (!error) {
+      setFavorites([...favorites, anime.id]);
+      setIsFavorite(true);
+    }
+  }
+} catch (error) {
+  console.error('Favorite error:', error);
+}
+};
+
+const handleAddComment = async (e) => {
+e.preventDefault();
+
+
+if (!currentUser || !commentText.trim()) {
+  return;
+}
+
+try {
+  const { data, error } = await supabase
+    .from('anime_comments')
+    .insert([{
+      anime_id: id,
+      username: currentUser.username,
+      comment_text: commentText,
+      created_at: new Date().toISOString(),
+    }])
+    .select();
+
+  if (!error && data) {
+    setCommentText('');
+    loadComments();
+  }
+} catch (error) {
+  console.error('Comment error:', error);
+}
+};
+
+const copyToClipboard = () => {
+navigator.clipboard.writeText(window.location.href);
+setCopied(true);
+setTimeout(() => setCopied(false), 2000);
+};
+
+const shareToTelegram = () => {
+  const text = `${anime.title} - Reyting: ${anime.rating}`;
+  const url = window.location.href;
+
+  window.open(
+    `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+    '_blank'
+  );
+};
+
+const shareToWhatsApp = () => {
+  const text = `${anime.title} - Reyting: ${anime.rating} - ${window.location.href}`;
+
+  window.open(
+    `https://wa.me/?text=${encodeURIComponent(text)}`,
+    '_blank'
+  );
+};
+
+
+if (!id) {
+return null;
+}
+
+if (loading) {
+return (
+<div style={styles.loadingContainer}>
+<div style={styles.spinner}></div>
+</div>
+);
+}
+
+if (!anime) {
+return (
+<div style={styles.errorContainer}>
+<div>Anime topilmadi</div>
+</div>
+);
+}
+
+const metaTitle = `${anime.title} Uzbek Tilida | To'liq Qismlar Bepul Onlayn`;
+
+const metaDescription = `${anime.title} animesini uzbek tilida onlayn tomosha qiling. ${
+  anime.genres ? anime.genres.join(', ') : 'Anime'
+} janri. Reyting: ${anime.rating || 'N/A'}. Barcha qismlar bepul.`;
+
+const metaKeywords = `${anime.title}, ${anime.title} uzbek tilida, anime uzbek tilida, ${
+  anime.genres ? anime.genres.join(', ') : ''
+}, anime onlayn, bepul anime`;
+
+return (
+<div style={styles.container}>
+<Head>
+<title>{metaTitle}</title>
+<meta name="description" content={metaDescription} />
+<meta name="keywords" content={metaKeywords} />
+
+
+<meta property="og:type" content="video.tv_show" />
+    <meta property="og:title" content={metaTitle} />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:image" content={anime.image_url} />
+    <meta property="og:url" content={typeof window !== 'undefined' ? window.location.href : ''} />
+    <meta property="og:site_name" content="Anime Uzbek" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={metaTitle} />
+    <meta name="twitter:description" content={metaDescription} />
+    <meta name="twitter:image" content={anime.image_url} />
+    
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="Uzbek" />
+    <meta name="author" content="Anime Uzbek" />
+    <link rel="canonical" href={typeof window !== 'undefined' ? window.location.href : ''} />
+    
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    
+    <script type="application/ld+json">
+      {JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "TVSeries",
+        "name": anime.title,
+        "description": anime.description || metaDescription,
+        "image": anime.image_url,
+        "genre": anime.genres || [],
+        "aggregateRating": anime.rating ? {
+          "@type": "AggregateRating",
+          "ratingValue": anime.rating,
+          "bestRating": "10"
+        } : undefined,
+        "numberOfEpisodes": anime.episodes || episodes.length
+      })}
+    </script>
+  </Head>
+
+  <style>{`
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
-    try {
-      if (isFavorite) {
-        const { error } = await supabase
-          .from('user_favorites')
-          .delete()
-          .eq('user_id', currentUser.id)
-          .eq('anime_id', anime.id);
+    @keyframes l18 { 
+      100%{transform: rotate(.5turn)}
+    }
 
-        if (!error) {
-          setFavorites(favorites.filter(id => id !== anime.id));
-          setIsFavorite(false);
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #000000;
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background-color: rgba(59, 130, 246, 0.6);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .spinner {
+      width: 50px;
+      aspect-ratio: 1;
+      --c: no-repeat radial-gradient(farthest-side, #3b82f6 92%, #0000);
+      background: var(--c) 50% 0, var(--c) 50% 100%, var(--c) 100% 50%, var(--c) 0 50%;
+      background-size: 10px 10px;
+      animation: l18 1s infinite;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .video-wrapper > div {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .plyr {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 12px;
+    }
+
+    .plyr__video-wrapper {
+      background: #000;
+    }
+
+    .plyr video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain;
+    }
+
+    .plyr--fullscreen video {
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: contain !important;
+    }
+
+    .plyr__control--overlaid {
+      background: white !important;
+      color: #5b5be5 !important;
+    }
+
+    .plyr__control:focus {
+      background: none !important;
+    }
+
+    .plyr__controls {
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    }
+
+    .plyr__control {
+      color: #fff;
+    }
+
+    .plyr__control:hover {
+    background: none !important;
+    }
+
+    .plyr__progress__buffer {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .plyr__progress input[type=range] {
+      color: rgba(59, 130, 246, 0.3);
+    }
+
+    .plyr__volume input[type=range] {
+      color: #3b82f6;
+    }
+
+    .episode-btn {
+      transition: all 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .video-wrapper {
+        padding-top: 56.25%;
+        border-radius: 8px;
+      }
+        .plyr__time+.plyr__time{
+        display:block !important;
         }
-      } else {
-        const { error } = await supabase
-          .from('user_favorites')
-          .insert([{ user_id: currentUser.id, anime_id: anime.id }]);
 
-        if (!error) {
-          setFavorites([...favorites, anime.id]);
-          setIsFavorite(true);
+      .plyr {
+        border-radius: 8px;
+      }
+    }
+
+    .share-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .share-modal {
+      background: linear-gradient(135deg, rgba(30, 30, 40, 0.98) 0%, rgba(20, 20, 30, 0.98) 100%);
+      padding: 25px;
+      border-radius: 24px;
+      max-width: 500px;
+      width: 90%;
+      border: 2px solid rgba(59, 130, 246, 0.3);
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9);
+      animation: slideIn 0.4s ease;
+    }
+
+    .share-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .share-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .share-close {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .share-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: rotate(90deg);
+    }
+
+    .share-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 25px;
+    }
+
+    .share-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 18px 24px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .share-btn:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: #3b82f6;
+      transform: translateX(5px);
+    }
+
+    .share-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .telegram-icon {
+      background: linear-gradient(135deg, #0088cc, #00a0e9);
+    }
+
+    .whatsapp-icon {
+      background: linear-gradient(135deg, #25D366, #128C7E);
+    }
+
+    .copy-icon {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    }
+
+    .anime-card {
+      background: none;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+
+    .anime-card img {
+      width: 100%;
+      border-radius: 20px;
+      height: 220px;
+      object-fit: cover;
+    }
+
+    .anime-card-content {
+      padding: 12px;
+    }
+
+    .anime-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 5px;
+      white-space: wrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .anime-card-rating {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    @media (max-width: 768px) {
+      .random-grid-mobile {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      .plyr__controls{
+        font-size:10px;
+      }
+        
+      .plyr__progress {
+        position: absolute;
+        min-width: 90%;
+        bottom: 40px;
+        left: 0;
+        margin-left: 15px;
+      }
+
+      @media (max-width: 385px) {
+        .plyr__progress{
+          bottom: 36px;
         }
       }
-    } catch (error) {
-      console.error('Favorite error:', error);
     }
-  };
+  `}</style>
 
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    
-    if (!currentUser || !commentText.trim()) {
-      return;
-    }
+  {shareModal && (
+    <div className="share-modal-overlay" onClick={() => setShareModal(false)}>
+      <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="share-header">
+          <h2 className="share-title">Ulashish</h2>
+          <button className="share-close" onClick={() => setShareModal(false)}>
+            <X size={20} />
+          </button>
+        </div>
 
-    try {
-      const { data, error } = await supabase
-        .from('anime_comments')
-        .insert([{
-          anime_id: id,
-          username: currentUser.username,
-          comment_text: commentText,
-          created_at: new Date().toISOString(),
-        }])
-        .select();
+        <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', marginBottom: '20px' }}>
+          {anime.title}
+        </div>
 
-      if (!error && data) {
-        setCommentText('');
-        loadComments();
-      }
-    } catch (error) {
-      console.error('Comment error:', error);
-    }
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const shareToTelegram = () => {
-    const text = `${anime.title} - Reyting: ${anime.rating}`;
-    const url = window.location.href;
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
-  };
-
-  const shareToWhatsApp = () => {
-    const text = `${anime.title} - Reyting: ${anime.rating} - ${window.location.href}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-  };
-
-  if (!id) {
-    return null;
-  }
-
-  if (loading) {
-    return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.spinner}></div>
-      </div>
-    );
-  }
-
-  if (!anime) {
-    return (
-      <div style={styles.errorContainer}>
-        <div>Anime topilmadi</div>
-      </div>
-    );
-  }
-
-  const metaTitle = `${anime.title} Uzbek Tilida | To'liq Qismlar Bepul Onlayn`;
-  const metaDescription = `${anime.title} animesini uzbek tilida onlayn tomosha qiling. ${anime.genres ? anime.genres.join(', ') : 'Anime'} janri. Reyting: ${anime.rating || 'N/A'}. Barcha qismlar bepul.`;
-  const metaKeywords = `${anime.title}, ${anime.title} uzbek tilida, anime uzbek tilida, ${anime.genres ? anime.genres.join(', ') : ''}, anime onlayn, bepul anime`;
-
-  return (
-    <div style={styles.container}>
-      <Head>
-        <title>{metaTitle}</title>
-        <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={metaKeywords} />
-        
-        <meta property="og:type" content="video.tv_show" />
-        <meta property="og:title" content={metaTitle} />
-        <meta property="og:description" content={metaDescription} />
-        <meta property="og:image" content={anime.image_url} />
-        <meta property="og:url" content={typeof window !== 'undefined' ? window.location.href : ''} />
-        <meta property="og:site_name" content="Anime Uzbek" />
-        
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={metaTitle} />
-        <meta name="twitter:description" content={metaDescription} />
-        <meta name="twitter:image" content={anime.image_url} />
-        
-        <meta name="robots" content="index, follow" />
-        <meta name="language" content="Uzbek" />
-        <meta name="author" content="Anime Uzbek" />
-        <link rel="canonical" href={typeof window !== 'undefined' ? window.location.href : ''} />
-        
-        <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-        <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-    
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-        
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "TVSeries",
-            "name": anime.title,
-            "description": anime.description || metaDescription,
-            "image": anime.image_url,
-            "genre": anime.genres || [],
-            "aggregateRating": anime.rating ? {
-              "@type": "AggregateRating",
-              "ratingValue": anime.rating,
-              "bestRating": "10"
-            } : undefined,
-            "numberOfEpisodes": anime.episodes || episodes.length
-          })}
-        </script>
-      </Head>
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        @keyframes l18 { 
-          100%{transform: rotate(.5turn)}
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-          -webkit-tap-highlight-color: transparent;
-          outline: none;
-        }
-
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-          background: #000000;
-          color: #ffffff;
-          overflow-x: hidden;
-        }
-
-        ::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-          background-color: rgba(59, 130, 246, 0.6);
-          border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-          background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        .spinner {
-          width: 50px;
-          aspect-ratio: 1;
-          --c: no-repeat radial-gradient(farthest-side, #3b82f6 92%, #0000);
-          background: var(--c) 50% 0, var(--c) 50% 100%, var(--c) 100% 50%, var(--c) 0 50%;
-          background-size: 10px 10px;
-          animation: l18 1s infinite;
-        }
-
-        .video-wrapper {
-          position: relative;
-          width: 100%;
-          padding-top: 56.25%;
-          background: #000;
-          border-radius: 12px;
-          overflow: hidden;
-          border: 2px solid rgba(59, 130, 246, 0.3);
-        }
-
-        .video-wrapper > div {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        .plyr {
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          border-radius: 12px;
-        }
-
-        .plyr__video-wrapper {
-          background: #000;
-        }
-
-        .plyr video {
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: contain;
-        }
-
-        .plyr--fullscreen video {
-          width: 100vw !important;
-          height: 100vh !important;
-          object-fit: contain !important;
-        }
-
-        .plyr__control--overlaid {
-          background: white !important;
-          color: #5b5be5 !important;
-        }
-
-        .plyr__control:focus {
-          background: none !important;
-        }
-
-        .plyr__controls {
-          background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-        }
-
-        .plyr__control {
-          color: #fff;
-        }
-
-        .plyr__control:hover {
-        background: none !important;
-        }
-
-        .plyr__progress__buffer {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
-        .plyr__progress input[type=range] {
-          color: rgba(59, 130, 246, 0.3);
-        }
-
-        .plyr__volume input[type=range] {
-          color: #3b82f6;
-        }
-
-        .episode-btn {
-          transition: all 0.3s ease;
-        }
-
-        @media (max-width: 768px) {
-          .video-wrapper {
-            padding-top: 56.25%;
-            border-radius: 8px;
-          }
-            .plyr__time+.plyr__time{
-            display:block !important;
-            }
-
-          .plyr {
-            border-radius: 8px;
-          }
-        }
-
-        .share-modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.85);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          animation: fadeIn 0.3s ease;
-          backdrop-filter: blur(8px);
-        }
-
-        .share-modal {
-          background: linear-gradient(135deg, rgba(30, 30, 40, 0.98) 0%, rgba(20, 20, 30, 0.98) 100%);
-          padding: 25px;
-          border-radius: 24px;
-          max-width: 500px;
-          width: 90%;
-          border: 2px solid rgba(59, 130, 246, 0.3);
-          box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9);
-          animation: slideIn 0.4s ease;
-        }
-
-        .share-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 30px;
-        }
-
-        .share-title {
-          font-size: 24px;
-          font-weight: 700;
-          color: #fff;
-        }
-
-        .share-close {
-          background: rgba(255, 255, 255, 0.1);
-          border: none;
-          color: #fff;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.3s;
-        }
-
-        .share-close:hover {
-          background: rgba(255, 255, 255, 0.2);
-          transform: rotate(90deg);
-        }
-
-        .share-buttons {
-          display: flex;
-          flex-direction: column;
-          gap: 15px;
-          margin-top: 25px;
-        }
-
-        .share-btn {
-          background: rgba(255, 255, 255, 0.05);
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          color: #fff;
-          padding: 18px 24px;
-          border-radius: 16px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          font-size: 16px;
-          font-weight: 600;
-          transition: all 0.3s;
-        }
-
-        .share-btn:hover {
-          background: rgba(59, 130, 246, 0.2);
-          border-color: #3b82f6;
-          transform: translateX(5px);
-        }
-
-        .share-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 24px;
-        }
-
-        .telegram-icon {
-          background: linear-gradient(135deg, #0088cc, #00a0e9);
-        }
-
-        .whatsapp-icon {
-          background: linear-gradient(135deg, #25D366, #128C7E);
-        }
-
-        .copy-icon {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        }
-
-        .anime-card {
-          background: none;
-          border-radius: 12px;
-          overflow: hidden;
-          cursor: pointer;
-          transition: all 0.3s;
-          border: 2px solid transparent;
-        }
-
-        .anime-card img {
-          width: 100%;
-          border-radius: 20px;
-          height: 220px;
-          object-fit: cover;
-        }
-
-        .anime-card-content {
-          padding: 12px;
-        }
-
-        .anime-card-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: #fff;
-          margin-bottom: 5px;
-          white-space: wrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .anime-card-rating {
-          font-size: 13px;
-          color: rgba(255, 255, 255, 0.6);
-        }
-
-        @media (max-width: 768px) {
-          .random-grid-mobile {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-
-          .plyr__controls{
-            font-size:10px;
-          }
-            
-          .plyr__progress {
-            position: absolute;
-            min-width: 90%;
-            bottom: 40px;
-            left: 0;
-            margin-left: 15px;
-          }
-
-          @media (max-width: 385px) {
-            .plyr__progress{
-              bottom: 36px;
-            }
-          }
-        }
-      `}</style>
-
-      {shareModal && (
-        <div className="share-modal-overlay" onClick={() => setShareModal(false)}>
-          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="share-header">
-              <h2 className="share-title">Ulashish</h2>
-              <button className="share-close" onClick={() => setShareModal(false)}>
-                <X size={20} />
-              </button>
+        <div className="share-buttons">
+          <button className="share-btn" onClick={copyToClipboard}>
+            <div className="share-icon copy-icon">
+              {copied ? <Check size={24} /> : <Copy size={24} />}
             </div>
-
-            <div style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', marginBottom: '20px' }}>
-              {anime.title}
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div>{copied ? 'Nusxalandi!' : 'Link nusxalash'}</div>
+              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+                Linkni buferga nusxalash
+              </div>
             </div>
+          </button>
 
-            <div className="share-buttons">
-              <button className="share-btn" onClick={copyToClipboard}>
-                <div className="share-icon copy-icon">
-                  {copied ? <Check size={24} /> : <Copy size={24} />}
-                </div>
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div>{copied ? 'Nusxalandi!' : 'Link nusxalash'}</div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
-                    Linkni buferga nusxalash
-                  </div>
-                </div>
-              </button>
+          <button className="share-btn" onClick={shareToTelegram}>
+            <div className="share-icon telegram-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.67-.52.36-.99.53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.73 3.99-1.74 6.65-2.89 7.97-3.45 3.79-1.58 4.58-1.86 5.09-1.87.11 0 .37.03.54.17.14.11.18.26.2.37.02.06.04.21.02.33z"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div>Telegram orqali ulashish</div>
+              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+                Do'stlaringiz bilan baham ko'ring
+              </div>
+            </div>
+          </button>
 
-              <button className="share-btn" onClick={shareToTelegram}>
-                <div className="share-icon telegram-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.67-.52.36-.99.53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.73 3.99-1.74 6.65-2.89 7.97-3.45 3.79-1.58 4.58-1.86 5.09-1.87.11 0 .37.03.54.17.14.11.18.26.2.37.02.06.04.21.02.33z"/>
-                  </svg>
-                </div>
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div>Telegram orqali ulashish</div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
-                    Do'stlaringiz bilan baham ko'ring
-                  </div>
-                </div>
-              </button>
-
-              <button className="share-btn" onClick={shareToWhatsApp}>
-                <div className="share-icon whatsapp-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+          <button className="share-btn" onClick={shareToWhatsApp}>
+            <div className="share-icon whatsapp-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
 </svg>
 </div>
 <div style={{ flex: 1, textAlign: 'left' }}>
@@ -892,218 +918,216 @@ Do'stlaringiz bilan baham ko'ring
     <ArrowLeft size={20} />
     Orqaga
   </button>
-
   <div style={styles.heroSection}>
     <img src={anime.image_url} alt={anime.title} style={styles.heroImage} />
     <div style={styles.heroOverlay}></div>
   </div>
-
   <div style={styles.content}>
     <div style={styles.titleSection}>
       <h1 style={styles.title}>{anime.title}</h1>
-      
-      <div style={styles.actionButtons}>
-        <button
-          style={{
-            ...styles.actionBtn,
-            borderColor: isFavorite ? '#ef4444' : 'rgba(255, 255, 255, 0.2)',
-            color: isFavorite ? '#ef4444' : '#fff',
-          }}
-          onClick={toggleFavorite}
-        >
-          <Heart
-            size={20}
-            fill={isFavorite ? 'currentColor' : 'none'}
-          />
-          {isFavorite ? 'Saqlangan' : 'Saqlash'}
-        </button>
-        <button style={styles.actionBtn} onClick={() => setShareModal(true)}>
-          <Share2 size={20} />
-          Ulashish
-        </button>
+
+<div style={styles.actionButtons}>
+    <button
+      style={{
+        ...styles.actionBtn,
+        borderColor: isFavorite ? '#ef4444' : 'rgba(255, 255, 255, 0.2)',
+        color: isFavorite ? '#ef4444' : '#fff',
+      }}
+      onClick={toggleFavorite}
+    >
+      <Heart
+        size={20}
+        fill={isFavorite ? 'currentColor' : 'none'}
+      />
+      {isFavorite ? 'Saqlangan' : 'Saqlash'}
+    </button>
+    <button style={styles.actionBtn} onClick={() => setShareModal(true)}>
+      <Share2 size={20} />
+      Ulashish
+    </button>
+  </div>
+</div>
+
+<div style={styles.statsGrid}>
+  <div style={styles.statCard}>
+    <div style={styles.statLabel}>Qismlar</div>
+    <div style={styles.statValue}>
+      <Play size={18} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+      {anime.episodes || episodes.length || 0}
+    </div>
+  </div>
+  
+  <div style={styles.statCard}>
+    <div style={styles.statLabel}>Bahosi</div>
+    <div style={styles.statValue}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFD700" style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }}>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+      {anime.rating || 'N/A'}
+    </div>
+  </div>
+  
+  <div style={styles.statCard}>
+    <div style={styles.statLabel}>Ko'rishlar</div>
+    <div style={styles.statValue}>
+      <Eye size={18} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+      {views || 0}
+    </div>
+  </div>
+</div>
+
+{anime.genres && anime.genres.length > 0 && (
+  <div style={styles.section}>
+    <h3 style={styles.sectionTitle}>Janrlar</h3>
+    <div style={styles.genresContainer}>
+      {anime.genres.map((genre, idx) => (
+        <span key={idx} style={styles.genreTag}>
+          {genre}
+        </span>
+      ))}
+    </div>
+  </div>
+)}
+
+{episodes.length > 0 && videoUrl ? (
+  <div style={styles.section}>
+    <h3 style={styles.sectionTitle}>
+      <Play size={20} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }} />
+      {currentEpisode}-qism
+    </h3>
+
+    <div style={styles.nativeBannerAd} ref={nativeBannerRef}>
+    </div>
+    
+    <div style={styles.videoContainer}>
+      <div className="video-wrapper">
+        <div ref={videoContainerRef}></div>
       </div>
     </div>
 
-    <div style={styles.statsGrid}>
-      <div style={styles.statCard}>
-        <div style={styles.statLabel}>Qismlar</div>
-        <div style={styles.statValue}>
-          <Play size={18} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-          {anime.episodes || episodes.length || 0}
-        </div>
-      </div>
-      
-      <div style={styles.statCard}>
-        <div style={styles.statLabel}>Bahosi</div>
-        <div style={styles.statValue}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFD700" style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }}>
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          {anime.rating || 'N/A'}
-        </div>
-      </div>
-      
-      <div style={styles.statCard}>
-        <div style={styles.statLabel}>Ko'rishlar</div>
-        <div style={styles.statValue}>
-          <Eye size={18} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-          {views || 0}
-        </div>
-      </div>
-    </div>
-
-    {anime.genres && anime.genres.length > 0 && (
-      <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Janrlar</h3>
-        <div style={styles.genresContainer}>
-          {anime.genres.map((genre, idx) => (
-            <span key={idx} style={styles.genreTag}>
-              {genre}
-            </span>
-          ))}
-        </div>
-      </div>
-    )}
-
-    {episodes.length > 0 && videoUrl ? (
-      <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>
-          <Play size={20} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }} />
-          {currentEpisode}-qism
-        </h3>
-
-        <div style={styles.nativeBannerAd} ref={nativeBannerRef}>
-        </div>
-        
-        <div style={styles.videoContainer}>
-          <div className="video-wrapper">
-            <div ref={videoContainerRef}></div>
-          </div>
-        </div>
-
-        <div style={styles.episodesSection}>
-          <h4 style={styles.episodesTitle}>Barcha qismlar</h4>
-          <div style={styles.episodesGrid}>
-            {episodes.map((episode) => (
-              <button
-                key={episode.id}
-                className="episode-btn"
-                style={{
-                  ...styles.episodeBtn,
-                  background: currentEpisode === episode.episode_number
-                    ? 'rgba(59, 130, 246, 0.3)'
-                    : 'rgba(255, 255, 255, 0.05)',
-                  borderColor: currentEpisode === episode.episode_number
-                    ? 'rgba(59, 130, 246, 0.3)'
-                    : 'rgba(255, 255, 255, 0.2)',
-                  color: '#fff',
-                }}
-                onClick={() => selectEpisode(episode)}
-              >
-                <div style={styles.episodeNumber}>{episode.episode_number}-Qism</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    ) : episodes.length === 0 ? (
-      <div style={styles.section}>
-        <div style={styles.noEpisodes}>
-          📺 Hozircha qismlar mavjud emas
-        </div>
-      </div>
-    ) : null}
-
-    {anime.description && (
-      <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Tavsif</h3>
-        <p style={{
-          ...styles.description,
-          display: descExpanded ? 'block' : '-webkit-box',
-          WebkitLineClamp: descExpanded ? 'unset' : 3,
-          WebkitBoxOrient: 'vertical',
-          overflow: descExpanded ? 'visible' : 'hidden',
-        }}>
-          {anime.description}
-        </p>
-        <button 
-          style={styles.toggleBtn}
-          onClick={() => setDescExpanded(!descExpanded)}
-        >
-          {descExpanded ? 'Kamroq' : 'Ko\'proq'}
-        </button>
-      </div>
-    )}
-
-    {randomAnimes.length > 0 && (
-      <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>✨Tavsiya etilgan animelar</h3>
-        <div style={styles.randomGrid} className="random-grid-mobile">
-          {randomAnimes.map((randomAnime) => (
-            <div
-              key={randomAnime.id}
-              className="anime-card"
-              onClick={() => router.push(`/anime/${randomAnime.title}?id=${randomAnime.id}`)}
-            >
-              <img src={randomAnime.image_url} alt={randomAnime.title} />
-              <div className="anime-card-content">
-                <div className="anime-card-title">{randomAnime.title}</div>
-                <div className="anime-card-rating">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFD700" style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }}>
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                  {randomAnime.rating || 'N/A'}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-
-    <div style={styles.section}>
-      <h3 style={styles.sectionTitle}>Izohlar ({comments.length})</h3>
-      
-      {currentUser ? (
-        <form onSubmit={handleAddComment} style={styles.commentForm}>
-          <input
-            type="text"
-            placeholder="Izoh qoldiring..."
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            style={styles.commentInput}
-          />
-          <button type="submit" style={styles.commentSubmitBtn}>
-            <Send size={20} />
+    <div style={styles.episodesSection}>
+      <h4 style={styles.episodesTitle}>Barcha qismlar</h4>
+      <div style={styles.episodesGrid}>
+        {episodes.map((episode) => (
+          <button
+            key={episode.id}
+            className="episode-btn"
+            style={{
+              ...styles.episodeBtn,
+              background: currentEpisode === episode.episode_number
+                ? 'rgba(59, 130, 246, 0.3)'
+                : 'rgba(255, 255, 255, 0.05)',
+              borderColor: currentEpisode === episode.episode_number
+                ? 'rgba(59, 130, 246, 0.3)'
+                : 'rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+            }}
+            onClick={() => selectEpisode(episode)}
+          >
+            <div style={styles.episodeNumber}>{episode.episode_number}-Qism</div>
           </button>
-        </form>
-      ) : (
-        <p style={styles.loginPrompt}>Izoh qoldirish uchun <strong>tizimga kiring</strong></p>
-      )}
-
-      <div style={styles.commentsList}>
-        {comments.length === 0 ? (
-          <p style={styles.noComments}>Hozircha izohlar yo'q</p>
-        ) : (
-          comments.map((comment) => (
-            <div key={comment.id} style={styles.comment}>
-              <div style={styles.profileInitial}>
-                {comment.username.charAt(0).toUpperCase()}
-              </div>
-              <div style={styles.commentContent}>
-                <div style={styles.commentHeader}>
-                  <span style={styles.username}>{comment.username}</span>
-                  <span style={styles.commentDate}>
-                    {new Date(comment.created_at).toLocaleDateString('uz-UZ')}
-                  </span>
-                </div>
-                <p style={styles.commentText}>{comment.comment_text}</p>
-              </div>
-            </div>
-          ))
-        )}
+        ))}
       </div>
     </div>
+  </div>
+) : episodes.length === 0 ? (
+  <div style={styles.section}>
+    <div style={styles.noEpisodes}>
+      📺 Hozircha qismlar mavjud emas
+    </div>
+  </div>
+) : null}
+
+{anime.description && (
+  <div style={styles.section}>
+    <h3 style={styles.sectionTitle}>Tavsif</h3>
+    <p style={{
+      ...styles.description,
+      display: descExpanded ? 'block' : '-webkit-box',
+      WebkitLineClamp: descExpanded ? 'unset' : 3,
+      WebkitBoxOrient: 'vertical',
+      overflow: descExpanded ? 'visible' : 'hidden',
+    }}>
+      {anime.description}
+    </p>
+    <button 
+      style={styles.toggleBtn}
+      onClick={() => setDescExpanded(!descExpanded)}
+    >
+      {descExpanded ? 'Kamroq' : 'Ko\'proq'}
+    </button>
+  </div>
+)}
+
+{randomAnimes.length > 0 && (
+  <div style={styles.section}>
+    <h3 style={styles.sectionTitle}>✨Tavsiya etilgan animelar</h3>
+    <div style={styles.randomGrid} className="random-grid-mobile">
+      {randomAnimes.map((randomAnime) => (
+        <div
+          key={randomAnime.id}
+          className="anime-card"
+          onClick={() => router.push(`/anime/${randomAnime.title}?id=${randomAnime.id}`)}
+        >
+          <img src={randomAnime.image_url} alt={randomAnime.title} />
+          <div className="anime-card-content">
+            <div className="anime-card-title">{randomAnime.title}</div>
+            <div className="anime-card-rating">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFD700" style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }}>
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              {randomAnime.rating || 'N/A'}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+<div style={styles.section}>
+  <h3 style={styles.sectionTitle}>Izohlar ({comments.length})</h3>
+  
+  {currentUser ? (
+    <form onSubmit={handleAddComment} style={styles.commentForm}>
+      <input
+        type="text"
+        placeholder="Izoh qoldiring..."
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        style={styles.commentInput}
+      />
+      <button type="submit" style={styles.commentSubmitBtn}>
+        <Send size={20} />
+      </button>
+    </form>
+  ) : (
+    <p style={styles.loginPrompt}>Izoh qoldirish uchun <strong>tizimga kiring</strong></p>
+  )}
+
+  <div style={styles.commentsList}>
+    {comments.length === 0 ? (
+      <p style={styles.noComments}>Hozircha izohlar yo'q</p>
+    ) : (
+      comments.map((comment) => (
+        <div key={comment.id} style={styles.comment}>
+          <div style={styles.profileInitial}>
+            {comment.username.charAt(0).toUpperCase()}
+          </div>
+          <div style={styles.commentContent}>
+            <div style={styles.commentHeader}>
+              <span style={styles.username}>{comment.username}</span>
+              <span style={styles.commentDate}>
+                {new Date(comment.created_at).toLocaleDateString('uz-UZ')}
+              </span>
+            </div>
+            <p style={styles.commentText}>{comment.comment_text}</p>
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+</div>
   </div>
 </div>
 );
