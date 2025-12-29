@@ -9,474 +9,480 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 let supabaseInstance = null;
 const getSupabase = () => {
-if (!supabaseInstance) {
-supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-auth: {
-persistSession: false,
-autoRefreshToken: false,
-},
-});
-}
-return supabaseInstance;
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+  return supabaseInstance;
 };
 
 const supabase = getSupabase();
 
 export default function AnimeDetail() {
-const router = useRouter();
-const { id } = router.query;
-const [anime, setAnime] = useState(null);
-const [loading, setLoading] = useState(true);
-const [favorites, setFavorites] = useState([]);
-const [isFavorite, setIsFavorite] = useState(false);
-const [currentUser, setCurrentUser] = useState(null);
-const [views, setViews] = useState(0);
-const [comments, setComments] = useState([]);
-const [commentText, setCommentText] = useState('');
-const [descExpanded, setDescExpanded] = useState(false);
-const [episodes, setEpisodes] = useState([]);
-const [currentEpisode, setCurrentEpisode] = useState(1);
-const [videoUrl, setVideoUrl] = useState('');
-const [shareModal, setShareModal] = useState(false);
-const [copied, setCopied] = useState(false);
-const [randomAnimes, setRandomAnimes] = useState([]);
-const playerRef = useRef(null);
-const videoContainerRef = useRef(null);
-const nativeBannerRef = useRef(null);
-const playerInitializedRef = useRef(false);
-const adScriptLoadedRef = useRef(false);
+  const router = useRouter();
+  const { id } = router.query;
+  const [anime, setAnime] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState([]);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [views, setViews] = useState(0);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState('');
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [episodes, setEpisodes] = useState([]);
+  const [currentEpisode, setCurrentEpisode] = useState(1);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [shareModal, setShareModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [randomAnimes, setRandomAnimes] = useState([]);
+  const playerRef = useRef(null);
+  const videoContainerRef = useRef(null);
+  const nativeBannerRef = useRef(null);
+  const playerInitializedRef = useRef(false);
+  const adScriptLoadedRef = useRef(false);
 
-useEffect(() => {
-checkCurrentUser();
-if (id) {
-loadAnimeDetail();
-loadComments();
-loadEpisodes();
-loadViews();
-loadRandomAnimes();
-}
-}, [id]);
+  useEffect(() => {
+    checkCurrentUser();
+    if (id) {
+      loadAnimeDetail();
+      loadComments();
+      loadEpisodes();
+      loadViews();
+      loadRandomAnimes();
+    }
+  }, [id]);
 
-useEffect(() => {
-if (videoUrl && anime) {
-playerInitializedRef.current = false;
-const timer = setTimeout(() => {
-initializePlayer();
-}, 300);
+  useEffect(() => {
+    if (videoUrl && anime) {
+      playerInitializedRef.current = false;
+      const timer = setTimeout(() => {
+        initializePlayer();
+      }, 300);
 
+      return () => clearTimeout(timer);
+    }
+  }, [videoUrl, anime]);
 
-return () => clearTimeout(timer);
-}
-}, [videoUrl, anime]);
+  useEffect(() => {
+    if (nativeBannerRef.current && !adScriptLoadedRef.current) {
+      adScriptLoadedRef.current = true;
 
-useEffect(() => {
-if (nativeBannerRef.current && !adScriptLoadedRef.current) {
-adScriptLoadedRef.current = true;
+      const script = document.createElement('script');
+      script.async = true;
+      script.setAttribute('data-cfasync', 'false');
+      script.src = '//pl28049626.effectivegatecpm.com/ceb154996d37408eb3007a0a9cea06aa/invoke.js';
+      script.onerror = () => {
+        console.log('Native banner script failed to load');
+      };
+      nativeBannerRef.current.appendChild(script);
 
+      const adContainer = document.createElement('div');
+      adContainer.id = 'container-ceb154996d37408eb3007a0a9cea06aa';
+      nativeBannerRef.current.appendChild(adContainer);
+    }
+  }, [episodes]);
 
-const script = document.createElement('script');
-  script.async = true;
-  script.setAttribute('data-cfasync', 'false');
-  script.src = '//pl28049626.effectivegatecpm.com/ceb154996d37408eb3007a0a9cea06aa/invoke.js';
-  script.onerror = () => {
-    console.log('Native banner script failed to load');
+  const loadRandomAnimes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('anime_cards')
+        .select('*')
+        .neq('id', id)
+        .limit(100);
+
+      if (!error && data) {
+        const shuffled = data.sort(() => 0.5 - Math.random());
+        setRandomAnimes(shuffled.slice(0, 12));
+      }
+    } catch (error) {
+      console.error('Random anime load error:', error);
+    }
   };
-  nativeBannerRef.current.appendChild(script);
 
-  const adContainer = document.createElement('div');
-  adContainer.id = 'container-ceb154996d37408eb3007a0a9cea06aa';
-  nativeBannerRef.current.appendChild(adContainer);
-}
-}, [episodes]);
+  const destroyPlayer = () => {
+    if (playerRef.current) {
+      try {
+        playerRef.current.destroy();
+      } catch (e) {
+        console.log('Player cleanup:', e);
+      }
+      playerRef.current = null;
+    }
 
-const loadRandomAnimes = async () => {
-try {
-const { data, error } = await supabase
-.from('anime_cards')
-.select('*')
-.neq('id', id)
-.limit(100);
+    if (videoContainerRef.current) {
+      videoContainerRef.current.innerHTML = '';
+    }
 
-if (!error && data) {
-    const shuffled = data.sort(() => 0.5 - Math.random());
-    setRandomAnimes(shuffled.slice(0, 12));
-  }
-} catch (error) {
-  console.error('Random anime load error:', error);
-}
-};
+    playerInitializedRef.current = false;
+  };
 
-const destroyPlayer = () => {
-if (playerRef.current) {
-try {
-playerRef.current.destroy();
-} catch (e) {
-console.log('Player cleanup:', e);
-}
-playerRef.current = null;
-}
+  const initializePlayer = () => {
+    if (playerInitializedRef.current) {
+      return;
+    }
 
+    destroyPlayer();
 
-if (videoContainerRef.current) {
-  videoContainerRef.current.innerHTML = '';
-}
+    if (!videoContainerRef.current || typeof window === 'undefined' || !window.Plyr) {
+      setTimeout(initializePlayer, 300);
+      return;
+    }
 
-playerInitializedRef.current = false;
-};
+    videoContainerRef.current.innerHTML = `
+      <video
+        id="plyr-player-${Date.now()}"
+        playsinline
+        controls
+      >
+        <source src="${videoUrl}" type="video/mp4" />
+      </video>
+    `;
 
-const initializePlayer = () => {
-if (playerInitializedRef.current) {
-return;
-}
+    const videoElement = videoContainerRef.current.querySelector('video');
+    if (!videoElement) {
+      return;
+    }
 
+    try {
+      const player = new window.Plyr(videoElement, {
+        controls: [
+          'play-large',
+          'play',
+          'progress',
+          'current-time',
+          'current',
+          'duration',
+          'settings',
+          'fullscreen'
+        ],
+        settings: ['quality', 'speed'],
+        quality: {
+          default: 720,
+          options: [1080, 720, 480, 360]
+        },
+        speed: {
+          selected: 1,
+          options: [0.5, 0.75, 1, 1.25, 1.5, 2]
+        },
+        fullscreen: {
+          enabled: true,
+          fallback: true,
+          iosNative: true
+        },
+        ratio: '16:9',
+        storage: {
+          enabled: false
+        },
+        keyboard: {
+          focused: true,
+          global: true
+        },
+        tooltips: {
+          controls: true,
+          seek: true
+        },
+        hideControls: true,
+        resetOnEnd: false,
+        autoplay: false,
+        muted: false,
+        volume: 0.8
+      });
 
-destroyPlayer();
+      player.on('ready', () => {
+        playerInitializedRef.current = true;
+        console.log('Plyr player ready');
+      });
 
-if (!videoContainerRef.current || typeof window === 'undefined' || !window.Plyr) {
-  setTimeout(initializePlayer, 300);
-  return;
-}
+      player.on('enterfullscreen', () => {
+        if (window.innerWidth < 768) {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(err => {
+              console.log('Orientation lock error:', err);
+            });
+          }
+        }
+      });
 
-videoContainerRef.current.innerHTML = `
-  <video
-    id="plyr-player-${Date.now()}"
-    playsinline
-    controls
-  >
-    <source src="${videoUrl}" type="video/mp4" />
-  </video>
-`;
+      player.on('exitfullscreen', () => {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      });
 
-const videoElement = videoContainerRef.current.querySelector('video');
-if (!videoElement) {
-  return;
-}
+      playerRef.current = player;
 
-try {
-  const player = new window.Plyr(videoElement, {
-    controls: [
-      'play-large',
-      'play',
-      'progress',
-      'current-time',
-      'current',
-      'duration',
-      'settings',
-      'fullscreen'
-    ],
-    settings: ['quality', 'speed'],
-    quality: {
-      default: 720,
-      options: [1080, 720, 480, 360]
-    },
-    speed: {
-      selected: 1,
-      options: [0.5, 0.75, 1, 1.25, 1.5, 2]
-    },
-    fullscreen: {
-      enabled: true,
-      fallback: true,
-      iosNative: true
-    },
-    ratio: '16:9',
-    storage: {
-      enabled: false
-    },
-    keyboard: {
-      focused: true,
-      global: true
-    },
-    tooltips: {
-      controls: true,
-      seek: true
-    },
-    hideControls: true,
-    resetOnEnd: false,
-    autoplay: false,
-    muted: false,
-    volume: 0.8
-  });
+    } catch (error) {
+      console.error('Plyr player error:', error);
+      playerInitializedRef.current = false;
+    }
+  };
 
-  player.on('ready', () => {
-    playerInitializedRef.current = true;
-    console.log('Plyr player ready');
-  });
+  const checkCurrentUser = async () => {
+    try {
+      const user = localStorage.getItem('anime_user');
+      if (user) {
+        const userData = JSON.parse(user);
+        setCurrentUser(userData);
+        await loadUserFavorites(userData.id);
+      }
+    } catch (error) {
+      console.error('User check error:', error);
+    }
+  };
 
-  player.on('enterfullscreen', () => {
-    if (window.innerWidth < 768) {
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(err => {
-          console.log('Orientation lock error:', err);
-        });
+  const getVideoToken = async (videoUrl) => {
+    try {
+      const response = await fetch(`/api/auth-token?url=${encodeURIComponent(videoUrl)}`);
+      const data = await response.json();
+      
+      if (data.token) {
+        return `/api/stream?token=${data.token}`;
+      }
+      return null;
+    } catch (error) {
+      console.error('Token error:', error);
+      return null;
+    }
+  };
+
+  const loadUserFavorites = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_favorites')
+        .select('anime_id')
+        .eq('user_id', userId);
+
+      if (!error && data) {
+        const favIds = data.map(f => f.anime_id);
+        setFavorites(favIds);
+        setIsFavorite(favIds.includes(id));
+      }
+    } catch (error) {
+      console.error('Load favorites error:', error);
+    }
+  };
+
+  const loadViews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('anime_views')
+        .select('view_count')
+        .eq('anime_id', id);
+
+      if (!error && data) {
+        const totalViews = data.reduce((sum, item) => sum + item.view_count, 0);
+        setViews(totalViews);
+      }
+    } catch (error) {
+      console.error('Load views error:', error);
+    }
+  };
+
+  const loadAnimeDetail = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('anime_cards')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        setLoading(false);
+        return;
+      }
+
+      setAnime(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Anime load error:', error);
+      setLoading(false);
+    }
+  };
+
+  const loadEpisodes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('anime_episodes')
+        .select('*')
+        .eq('anime_id', id)
+        .order('episode_number', { ascending: true});
+
+      if (error) {
+        setEpisodes([]);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setEpisodes(data);
+        setCurrentEpisode(data[0].episode_number);
+        
+        const firstVideoUrl = data[0].video_url;
+        if (firstVideoUrl) {
+          const streamUrl = await getVideoToken(firstVideoUrl);
+          if (streamUrl) {
+            setVideoUrl(streamUrl);
+          }
+        }
+      } else {
+        setEpisodes([]);
+      }
+    } catch (error) {
+      console.error('Episodes load error:', error);
+      setEpisodes([]);
+    }
+  };
+
+  const loadComments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('anime_comments')
+        .select('*')
+        .eq('anime_id', id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setComments([]);
+        return;
+      }
+
+      setComments(data || []);
+    } catch (error) {
+      console.error('Comments load error:', error);
+      setComments([]);
+    }
+  };
+
+  const selectEpisode = async (episode) => {
+    destroyPlayer();
+    setCurrentEpisode(episode.episode_number);
+
+    if (episode.video_url) {
+      const streamUrl = await getVideoToken(episode.video_url);
+      if (streamUrl) {
+        setVideoUrl(streamUrl);
       }
     }
-  });
+  };
 
-  player.on('exitfullscreen', () => {
-    if (screen.orientation && screen.orientation.unlock) {
-      screen.orientation.unlock();
+  const toggleFavorite = async () => {
+    if (!anime || !currentUser) {
+      return;
     }
-  });
 
-  playerRef.current = player;
+    try {
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('user_favorites')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('anime_id', anime.id);
 
-} catch (error) {
-  console.error('Plyr player error:', error);
-  playerInitializedRef.current = false;
-}
-};
+        if (!error) {
+          setFavorites(favorites.filter(id => id !== anime.id));
+          setIsFavorite(false);
+        }
+      } else {
+        const { error } = await supabase
+          .from('user_favorites')
+          .insert([{ user_id: currentUser.id, anime_id: anime.id }]);
 
-const checkCurrentUser = async () => {
-try {
-const user = localStorage.getItem('anime_user');
-if (user) {
-const userData = JSON.parse(user);
-setCurrentUser(userData);
-await loadUserFavorites(userData.id);
-}
-} catch (error) {
-console.error('User check error:', error);
-}
-};
-
-const loadUserFavorites = async (userId) => {
-try {
-const { data, error } = await supabase
-.from('user_favorites')
-.select('anime_id')
-.eq('user_id', userId);
-
-
-if (!error && data) {
-    const favIds = data.map(f => f.anime_id);
-    setFavorites(favIds);
-    setIsFavorite(favIds.includes(id));
-  }
-} catch (error) {
-  console.error('Load favorites error:', error);
-}
-};
-
-const loadViews = async () => {
-try {
-const { data, error } = await supabase
-.from('anime_views')
-.select('view_count')
-.eq('anime_id', id);
-
-if (!error && data) {
-    const totalViews = data.reduce((sum, item) => sum + item.view_count, 0);
-    setViews(totalViews);
-  }
-} catch (error) {
-  console.error('Load views error:', error);
-}
-};
-
-const loadAnimeDetail = async () => {
-setLoading(true);
-try {
-const { data, error } = await supabase
-.from('anime_cards')
-.select('*')
-.eq('id', id)
-.single();
-
-if (error || !data) {
-    setLoading(false);
-    return;
-  }
-
-  setAnime(data);
-  setLoading(false);
-} catch (error) {
-  console.error('Anime load error:', error);
-  setLoading(false);
-}
-};
-
-const loadEpisodes = async () => {
-try {
-const { data, error } = await supabase
-.from('anime_episodes')
-.select('*')
-.eq('anime_id', id)
-.order('episode_number', { ascending: true});
-
-
-if (error) {
-    setEpisodes([]);
-    return;
-  }
-
-  if (data && data.length > 0) {
-    setEpisodes(data);
-    setCurrentEpisode(data[0].episode_number);
-    
-    const firstVideoUrl = data[0].video_url;
-    if (firstVideoUrl) {
-      const streamUrl = `/api/stream?fileName=${encodeURIComponent(firstVideoUrl)}`;
-      setVideoUrl(streamUrl);
+        if (!error) {
+          setFavorites([...favorites, anime.id]);
+          setIsFavorite(true);
+        }
+      }
+    } catch (error) {
+      console.error('Favorite error:', error);
     }
-  } else {
-    setEpisodes([]);
-  }
-} catch (error) {
-  console.error('Episodes load error:', error);
-  setEpisodes([]);
-}
-};
+  };
 
-const loadComments = async () => {
-try {
-const { data, error } = await supabase
-.from('anime_comments')
-.select('*')
-.eq('anime_id', id)
-.order('created_at', { ascending: false });
+  const handleAddComment = async (e) => {
+    e.preventDefault();
 
-
-if (error) {
-    setComments([]);
-    return;
-  }
-
-  setComments(data || []);
-} catch (error) {
-  console.error('Comments load error:', error);
-  setComments([]);
-}
-};
-
-const selectEpisode = (episode) => {
-destroyPlayer();
-
-
-setCurrentEpisode(episode.episode_number);
-
-if (episode.video_url) {
-  const streamUrl = `/api/stream?fileName=${encodeURIComponent(episode.video_url)}`;
-  setVideoUrl(streamUrl);
-}
-};
-
-const toggleFavorite = async () => {
-if (!anime || !currentUser) {
-return;
-}
-
-
-try {
-  if (isFavorite) {
-    const { error } = await supabase
-      .from('user_favorites')
-      .delete()
-      .eq('user_id', currentUser.id)
-      .eq('anime_id', anime.id);
-
-    if (!error) {
-      setFavorites(favorites.filter(id => id !== anime.id));
-      setIsFavorite(false);
+    if (!currentUser || !commentText.trim()) {
+      return;
     }
-  } else {
-    const { error } = await supabase
-      .from('user_favorites')
-      .insert([{ user_id: currentUser.id, anime_id: anime.id }]);
 
-    if (!error) {
-      setFavorites([...favorites, anime.id]);
-      setIsFavorite(true);
+    try {
+      const { data, error } = await supabase
+        .from('anime_comments')
+        .insert([{
+          anime_id: id,
+          username: currentUser.username,
+          comment_text: commentText,
+          created_at: new Date().toISOString(),
+        }])
+        .select();
+
+      if (!error && data) {
+        setCommentText('');
+        loadComments();
+      }
+    } catch (error) {
+      console.error('Comment error:', error);
     }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareToTelegram = () => {
+    const text = `${anime.title} - Reyting: ${anime.rating}`;
+    const url = window.location.href;
+
+    window.open(
+      `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+      '_blank'
+    );
+  };
+
+  const shareToWhatsApp = () => {
+    const text = `${anime.title} - Reyting: ${anime.rating} - ${window.location.href}`;
+
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(text)}`,
+      '_blank'
+    );
+  };
+
+  if (!id) {
+    return null;
   }
-} catch (error) {
-  console.error('Favorite error:', error);
-}
-};
 
-const handleAddComment = async (e) => {
-e.preventDefault();
-
-
-if (!currentUser || !commentText.trim()) {
-  return;
-}
-
-try {
-  const { data, error } = await supabase
-    .from('anime_comments')
-    .insert([{
-      anime_id: id,
-      username: currentUser.username,
-      comment_text: commentText,
-      created_at: new Date().toISOString(),
-    }])
-    .select();
-
-  if (!error && data) {
-    setCommentText('');
-    loadComments();
+  if (loading) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.spinner}></div>
+      </div>
+    );
   }
-} catch (error) {
-  console.error('Comment error:', error);
-}
-};
 
-const copyToClipboard = () => {
-navigator.clipboard.writeText(window.location.href);
-setCopied(true);
-setTimeout(() => setCopied(false), 2000);
-};
+  if (!anime) {
+    return (
+      <div style={styles.errorContainer}>
+        <div>Anime topilmadi</div>
+      </div>
+    );
+  }
 
-const shareToTelegram = () => {
-  const text = `${anime.title} - Reyting: ${anime.rating}`;
-  const url = window.location.href;
+  const metaTitle = `${anime.title} Uzbek Tilida | To'liq Qismlar Bepul Onlayn`;
 
-  window.open(
-    `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
-    '_blank'
-  );
-};
+  const metaDescription = `${anime.title} animesini uzbek tilida onlayn tomosha qiling. ${
+    anime.genres ? anime.genres.join(', ') : 'Anime'
+  } janri. Reyting: ${anime.rating || 'N/A'}. Barcha qismlar bepul.`;
 
-const shareToWhatsApp = () => {
-  const text = `${anime.title} - Reyting: ${anime.rating} - ${window.location.href}`;
-
-  window.open(
-    `https://wa.me/?text=${encodeURIComponent(text)}`,
-    '_blank'
-  );
-};
-
-
-if (!id) {
-return null;
-}
-
-if (loading) {
-return (
-<div style={styles.loadingContainer}>
-<div style={styles.spinner}></div>
-</div>
-);
-}
-
-if (!anime) {
-return (
-<div style={styles.errorContainer}>
-<div>Anime topilmadi</div>
-</div>
-);
-}
-
-const metaTitle = `${anime.title} Uzbek Tilida | To'liq Qismlar Bepul Onlayn`;
-
-const metaDescription = `${anime.title} animesini uzbek tilida onlayn tomosha qiling. ${
-  anime.genres ? anime.genres.join(', ') : 'Anime'
-} janri. Reyting: ${anime.rating || 'N/A'}. Barcha qismlar bepul.`;
-
-const metaKeywords = `${anime.title}, ${anime.title} uzbek tilida, anime uzbek tilida, ${
-  anime.genres ? anime.genres.join(', ') : ''
-}, anime onlayn, bepul anime`;
-
+  const metaKeywords = `${anime.title}, ${anime.title} uzbek tilida, anime uzbek tilida, ${
+    anime.genres ? anime.genres.join(', ') : ''
+  }, anime onlayn, bepul anime`;
 return (
 <div style={styles.container}>
 <Head>

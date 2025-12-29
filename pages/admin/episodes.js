@@ -147,7 +147,7 @@ export default function EpisodesManager() {
           margin: 0;
           padding: 0;
           -webkit-tap-highlight-color: transparent;
-        outline: none;
+          outline: none;
         }
 
         body {
@@ -416,17 +416,12 @@ export default function EpisodesManager() {
 
         .form-file-upload {
           border: 2px dashed #fff;
-    -webkit-border-radius: 8px;
-    -moz-border-radius: 8px;
-    border-radius: 8px;
-    padding: 40px 110px;
-    text-align: center;
-    cursor: pointer;
-    -webkit-transition: all .2s;
-    -moz-transition: all .2s;
-    -o-transition: all .2s;
-    transition: all .2s;
-    background: #000;
+          border-radius: 8px;
+          padding: 40px 20px;
+          text-align: center;
+          cursor: pointer;
+          transition: all .2s;
+          background: #000;
         }
 
         .form-file-upload:hover {
@@ -440,7 +435,6 @@ export default function EpisodesManager() {
         .file-upload-text {
           color: #ffffff;
           font-size: 14px;
-          display:none;
           margin-top: 12px;
           font-family: 'Courier New', Courier, monospace;
         }
@@ -604,6 +598,10 @@ export default function EpisodesManager() {
 
           .modal {
             padding: 24px;
+          }
+
+          .form-file-upload {
+            padding: 30px 15px;
           }
         }
       `}</style>
@@ -868,7 +866,7 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
           <div className="form-group">
             <label className="form-label">
               <Upload size={16} style={{ display: 'inline', verticalAlign: 'middle' }} />
-              {' '}Video yuklash (Max 500MB)
+              {' '}Video yuklash (Max 10GB)
             </label>
             <label className="form-file-upload">
               <input type="file" accept="video/*" onChange={handleVideoChange} disabled={isUploading} />
@@ -890,7 +888,7 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
               </div>
               <div className="progress-status">
                 {uploadProgress < 20 && "Tayyorlanmoqda..."}
-                {uploadProgress >= 20 && uploadProgress < 80 && "Video Backblaze B2 ga yuklanmoqda..."}
+                {uploadProgress >= 20 && uploadProgress < 80 && "Video Cloudflare R2 ga yuklanmoqda..."}
                 {uploadProgress >= 80 && uploadProgress < 100 && "Ma'lumotlar saqlanmoqda..."}
                 {uploadProgress === 100 && "Tayyor!"}
               </div>
@@ -925,22 +923,21 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
                   Bekor qilish
                 </button>
                 <button className="modal-btn primary" onClick={() => {
-                  modal.onConfirm();
-                  hideModal();
-                }} type="button">
-                  Tasdiqlash
-                </button>
-              </>
-            ) : (
-              <button className="modal-btn primary" onClick={hideModal} type="button">
-                OK
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+modal.onConfirm();
+hideModal();
+}} type="button">
+Tasdiqlash
+</button>
+</>
+) : (
+<button className="modal-btn primary" onClick={hideModal} type="button">
+OK
+</button>
+)}
+</div>
+</div>
+</div>
+);
+}
+return null;
 }

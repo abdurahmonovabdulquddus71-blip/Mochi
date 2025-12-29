@@ -1,6 +1,6 @@
 import formidable from "formidable";
 import fs from "fs";
-import fetch from "node-fetch";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 export const config = {
   api: {
@@ -8,93 +8,42 @@ export const config = {
   },
 };
 
-// ⚙️ Backblaze B2 sozlamalari
-const B2_KEY_ID = "005388ef1432aec0000000010";
-const B2_APPLICATION_KEY = "K005f6tbx4UCFl2fhp1hEuQcB0kEefo";
-const B2_BUCKET_NAME = "malika-memory"; // bu to‘g‘risi defis bilan
-const B2_BUCKET_ID = "5388d88e9fc174c3929a0e1c"; // qo‘lda olingan bucket ID
+// S3Client yaratish
+const s3Client = new S3Client({
+  region: "auto",
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY,
+    secretAccessKey: process.env.R2_SECRET_KEY,
+  },
+});
 
-// 🔐 1. Autentifikatsiya
-async function authenticateB2() {
-  const auth = Buffer.from(`${B2_KEY_ID}:${B2_APPLICATION_KEY}`).toString("base64");
+// Fayl nomini tozalash funksiyasi
+const sanitizeFileName = (str) => {
+  if (!str) return "unknown";
+  return String(str).replace(/[^a-zA-Z0-9_-]/g, "");
+};
 
-  const response = await fetch("https://api.backblazeb2.com/b2api/v2/b2_authorize_account", {
-    method: "GET",
-    headers: { Authorization: `Basic ${auth}` },
-  });
-
-  const text = await response.text();
-  if (!response.ok) {
-    console.error("❌ B2 autentifikatsiya xatosi:", text);
-    throw new Error("B2 autentifikatsiya xatosi");
-  }
-
-  return JSON.parse(text);
-}
-
-// ☁️ 2. Faylni Backblaze B2'ga yuklash
-async function uploadToB2(filePath, fileName, contentType, b2Auth) {
-  // 1️⃣ Upload URL olish
-  const uploadUrlResponse = await fetch(`${b2Auth.apiUrl}/b2api/v2/b2_get_upload_url`, {
-    method: "POST",
-    headers: {
-      Authorization: b2Auth.authorizationToken,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ bucketId: B2_BUCKET_ID }),
-  });
-
-  const uploadUrlText = await uploadUrlResponse.text();
-  if (!uploadUrlResponse.ok) {
-    console.error("❌ Upload URL olishda xato:", uploadUrlText);
-    throw new Error("Upload URL olishda xato");
-  }
-
-  const uploadUrlData = JSON.parse(uploadUrlText);
-
-  // 2️⃣ Faylni o‘qish
-  const fileBuffer = fs.readFileSync(filePath);
-
-  // 3️⃣ Faylni yuklash
-  const uploadResponse = await fetch(uploadUrlData.uploadUrl, {
-    method: "POST",
-    headers: {
-      Authorization: uploadUrlData.authorizationToken,
-      "X-Bz-File-Name": encodeURIComponent(fileName),
-      "Content-Type": contentType || "video/mp4",
-      "X-Bz-Content-Sha1": "do_not_verify",
-      "X-Bz-Info-Author": "anime-admin",
-    },
-    body: fileBuffer,
-  });
-
-  const uploadText = await uploadResponse.text();
-  if (!uploadResponse.ok) {
-    console.error("❌ Fayl yuklashda xato:", uploadText);
-    throw new Error("Fayl yuklashda xato");
-  }
-
-  const uploadData = JSON.parse(uploadText);
-
-  // 4️⃣ Yuklangan faylni URL
-  const downloadUrl = `${b2Auth.downloadUrl}/file/${B2_BUCKET_NAME}/${fileName}`;
-
-  return {
-    fileId: uploadData.fileId,
-    fileName: uploadData.fileName,
-    downloadUrl,
-  };
-}
-
-// 🎬 3. API handler
 export default async function handler(req, res) {
+  // Faqat POST so'rovlarni qabul qilish
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Faqat POST so'rovlar qabul qilinadi" });
   }
+
+  let videoFile = null;
 
   try {
-    // 1️⃣ Form-data faylni olish
-    const form = formidable({ maxFileSize: 10000 * 1024 * 1024 }); // 10GB
+    // 1️⃣ Muhit o'zgaruvchilarini tekshirish
+    if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY || !process.env.R2_SECRET_KEY || !process.env.R2_BUCKET_NAME) {
+      throw new Error("R2 sozlamalari to'liq emas (.env faylni tekshiring)");
+    }
+
+    // 2️⃣ Form-data faylni olish
+    const form = formidable({
+      maxFileSize: 10000 * 1024 * 1024, // 10GB
+      keepExtensions: true,
+    });
+
     const [fields, files] = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
         if (err) reject(err);
@@ -102,7 +51,8 @@ export default async function handler(req, res) {
       });
     });
 
-    const videoFile = files.video?.[0];
+    // 3️⃣ Fayllarni tekshirish
+    videoFile = files.video?.[0];
     const episodeNumber = fields.episode_number?.[0];
     const animeId = fields.anime_id?.[0];
 
@@ -110,28 +60,65 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Video fayl topilmadi" });
     }
 
-    // 2️⃣ B2 bilan avtorizatsiya
-    const b2Auth = await authenticateB2();
+    if (!episodeNumber || !animeId) {
+      return res.status(400).json({ error: "episode_number va anime_id majburiy" });
+    }
 
-    // 3️⃣ Fayl nomini tayyorlash
-    const fileExt = videoFile.originalFilename.split(".").pop();
-    const fileName = `anime_${animeId}_episode_${episodeNumber}_${Date.now()}.${fileExt}`;
+    // 4️⃣ Fayl nomini tayyorlash
+    const fileExt = videoFile.originalFilename?.split(".").pop() || "mp4";
+    const fileName = `anime_${sanitizeFileName(animeId)}_episode_${sanitizeFileName(episodeNumber)}_${Date.now()}.${fileExt}`;
 
-    // 4️⃣ Faylni yuklash
-    const uploadResult = await uploadToB2(
-      videoFile.filepath,
-      fileName,
-      videoFile.mimetype,
-      b2Auth
+    console.log(`📤 Upload boshlanmoqda: ${fileName}`);
+
+    // 5️⃣ Faylni o'qish
+    const fileBuffer = fs.readFileSync(videoFile.filepath);
+
+    // 6️⃣ R2 ga upload qilish
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: fileName,
+        Body: fileBuffer,
+        ContentType: videoFile.mimetype || "video/mp4",
+      })
     );
 
-    // 5️⃣ Vaqtinchalik faylni o‘chirish
-    fs.unlinkSync(videoFile.filepath);
+    console.log(`✅ Upload muvaffaqiyatli: ${fileName}`);
 
-    // 6️⃣ Natijani qaytarish
-    return res.status(200).json(uploadResult);
+    // 7️⃣ Vaqtinchalik faylni o'chirish
+    if (fs.existsSync(videoFile.filepath)) {
+      fs.unlinkSync(videoFile.filepath);
+    }
+
+    // 8️⃣ Public URL yaratish
+    const downloadUrl = process.env.R2_PUBLIC_DOMAIN
+      ? `https://${process.env.R2_PUBLIC_DOMAIN}/${fileName}`
+      : `https://pub-${process.env.R2_ACCOUNT_ID}.r2.dev/${fileName}`;
+
+    // 9️⃣ Natijani qaytarish
+    return res.status(200).json({
+      success: true,
+      fileName,
+      downloadUrl,
+      fileSize: videoFile.size,
+      uploadedAt: new Date().toISOString(),
+    });
+
   } catch (error) {
-    console.error("❌ Upload error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("❌ Upload xatosi:", error);
+
+    // Vaqtinchalik faylni o'chirish (xato bo'lsa ham)
+    if (videoFile?.filepath && fs.existsSync(videoFile.filepath)) {
+      try {
+        fs.unlinkSync(videoFile.filepath);
+      } catch (unlinkError) {
+        console.error("⚠️ Vaqtinchalik faylni o'chirishda xato:", unlinkError);
+      }
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Upload xatosi",
+    });
   }
 }

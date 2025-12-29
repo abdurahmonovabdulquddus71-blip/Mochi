@@ -1,60 +1,92 @@
-import fetch from 'node-fetch';
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const B2_KEY_ID = '005388ef1432aec0000000010';
-const B2_APPLICATION_KEY = 'K005f6tbx4UCFl2fhp1hEuQcB0kEefo';
-
-async function authenticateB2() {
-  const auth = Buffer.from(`${B2_KEY_ID}:${B2_APPLICATION_KEY}`).toString('base64');
-  const response = await fetch('https://api.backblazeb2.com/b2api/v2/b2_authorize_account', {
-    method: 'GET',
-    headers: {
-      'Authorization': `Basic ${auth}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('B2 autentifikatsiya xatosi');
-  }
-
-  return await response.json();
-}
+// S3Client yaratish
+const s3Client = new S3Client({
+  region: "auto",
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY,
+    secretAccessKey: process.env.R2_SECRET_KEY,
+  },
+});
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Faqat POST so\'rovlar qabul qilinadi' });
   }
 
   try {
-    const { file_id, file_name } = req.body;
-
-    if (!file_id || !file_name) {
-      return res.status(400).json({ error: 'file_id va file_name kerak' });
+    // 1️⃣ Muhit o'zgaruvchilarini tekshirish
+    if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY || !process.env.R2_SECRET_KEY || !process.env.R2_BUCKET_NAME) {
+      return res.status(500).json({ 
+        error: 'R2 sozlamalari to\'liq emas (.env faylni tekshiring)'
+      });
     }
 
-    // Authenticate B2
-    const b2Auth = await authenticateB2();
+    // 2️⃣ Request body dan ma'lumotlarni olish
+    const { file_name, video_url } = req.body;
 
-    // Delete file
-    const deleteResponse = await fetch(`${b2Auth.apiUrl}/b2api/v2/b2_delete_file_version`, {
-      method: 'POST',
-      headers: {
-        'Authorization': b2Auth.authorizationToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        fileId: file_id,
-        fileName: file_name
+    if (!file_name && !video_url) {
+      return res.status(400).json({ 
+        error: 'file_name yoki video_url yuborish kerak' 
+      });
+    }
+
+    // 3️⃣ Fayl nomini aniqlash
+    let fileName = file_name;
+    
+    // Agar faqat video_url yuborilgan bo'lsa, undan fayl nomini ajratib olish
+    if (!fileName && video_url) {
+      try {
+        const url = new URL(video_url);
+        fileName = url.pathname.split('/').pop();
+      } catch (urlError) {
+        return res.status(400).json({ 
+          error: 'Noto\'g\'ri video_url formati' 
+        });
+      }
+    }
+
+    if (!fileName) {
+      return res.status(400).json({ 
+        error: 'Fayl nomi aniqlanmadi' 
+      });
+    }
+
+    console.log(`🗑️ O'chirilmoqda: ${fileName}`);
+
+    // 4️⃣ R2 dan faylni o'chirish
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: fileName,
       })
+    );
+
+    console.log(`✅ O'chirildi: ${fileName}`);
+
+    // 5️⃣ Muvaffaqiyatli javob
+    return res.status(200).json({ 
+      success: true,
+      message: 'Fayl muvaffaqiyatli o\'chirildi',
+      fileName: fileName
     });
 
-    if (!deleteResponse.ok) {
-      const errorData = await deleteResponse.text();
-      throw new Error('Faylni o\'chirishda xato: ' + errorData);
+  } catch (error) {
+    console.error('❌ O\'chirish xatosi:', error);
+    
+    // Agar fayl topilmasa
+    if (error.name === 'NoSuchKey' || error.Code === 'NoSuchKey') {
+      return res.status(404).json({ 
+        error: 'Fayl topilmadi',
+        details: 'Bu fayl allaqachon o\'chirilgan yoki mavjud emas'
+      });
     }
 
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Delete error:', error);
-    return res.status(500).json({ error: error.message });
+    // Boshqa xatolar
+    return res.status(500).json({ 
+      error: 'Faylni o\'chirishda xato',
+      details: error.message 
+    });
   }
 }
