@@ -490,7 +490,7 @@ return (
 <meta name="description" content={metaDescription} />
 <meta name="keywords" content={metaKeywords} />
 
-
+<link rel="icon" href="/favicon.ico" />
 <meta property="og:type" content="video.tv_show" />
     <meta property="og:title" content={metaTitle} />
     <meta property="og:description" content={metaDescription} />
