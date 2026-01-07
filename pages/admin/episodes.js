@@ -740,7 +740,40 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
       
       let videoUrl = formData.video_url;
 
-      if (formData.videoFile) {
+      // Agar tahrirlash rejimida va video tanlangan bo'lsa, yangi video yuklash
+      // Agar tahrirlash rejimida va video tanlanmagan bo'lsa, eski video URL ni qayta yuklash
+      if (modal.data && !formData.videoFile) {
+        // Eski videoni qayta yuklash uchun backend ga so'rov yuborish
+        setUploadProgress(20);
+        try {
+          const reuploadResponse = await fetch('/api/reupload-video', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              video_url: formData.video_url,
+              episode_number: formData.episode_number,
+              anime_id: animeInfo.id
+            })
+          });
+
+          if (!reuploadResponse.ok) {
+            const error = await reuploadResponse.json();
+            throw new Error(error.error || 'Video qayta yuklashda xato');
+          }
+
+          const reuploadResult = await reuploadResponse.json();
+          videoUrl = reuploadResult.downloadUrl;
+          setUploadProgress(80);
+        } catch (reuploadError) {
+          console.error('Reupload error:', reuploadError);
+          // Agar qayta yuklashda xato bo'lsa, eski URL ni saqlab qolamiz
+          videoUrl = formData.video_url;
+          setUploadProgress(80);
+        }
+      } else if (formData.videoFile) {
+        // Yangi video yuklash
         setUploadProgress(20);
         const uploadResult = await uploadToBackend(formData.videoFile, formData.episode_number);
         videoUrl = uploadResult.downloadUrl;
@@ -923,21 +956,22 @@ function EpisodeModal({ modal, hideModal, showModal, loadEpisodes, animeInfo, up
                   Bekor qilish
                 </button>
                 <button className="modal-btn primary" onClick={() => {
-modal.onConfirm();
-hideModal();
-}} type="button">
-Tasdiqlash
-</button>
-</>
-) : (
-<button className="modal-btn primary" onClick={hideModal} type="button">
-OK
-</button>
-)}
-</div>
-</div>
-</div>
-);
-}
-return null;
+                  modal.onConfirm();
+                  hideModal();
+                }} type="button">
+                  Tasdiqlash
+                </button>
+              </>
+            ) : (
+              <button className="modal-btn primary" onClick={hideModal} type="button">
+                OK
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  return null;
 }

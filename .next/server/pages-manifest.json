@@ -2,9 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/api/auth-token": "pages/api/auth-token.js",
-  "/anime/[slug]": "pages/anime/[slug].js",
   "/admin/admin": "pages/admin/admin.js",
-  "/api/stream": "pages/api/stream.js",
+  "/admin/episodes": "pages/admin/episodes.js",
   "/": "pages/index.js"
 }

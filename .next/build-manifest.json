@@ -27,10 +27,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/anime/[slug]": [
+    "/admin/admin": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/anime/[slug].js"
+      "static/chunks/pages/admin/admin.js"
+    ],
+    "/admin/episodes": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/admin/episodes.js"
     ]
   },
   "ampFirstPages": []

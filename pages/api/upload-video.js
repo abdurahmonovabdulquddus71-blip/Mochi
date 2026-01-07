@@ -1,6 +1,8 @@
 import formidable from "formidable";
 import fs from "fs";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import https from "https";
+import http from "http";
 
 export const config = {
   api: {
@@ -22,6 +24,31 @@ const s3Client = new S3Client({
 const sanitizeFileName = (str) => {
   if (!str) return "unknown";
   return String(str).replace(/[^a-zA-Z0-9_-]/g, "");
+};
+
+// URL dan faylni yuklab olish funksiyasi
+const downloadFileFromUrl = (url) => {
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https') ? https : http;
+    
+    protocol.get(url, (response) => {
+      if (response.statusCode === 302 || response.statusCode === 301) {
+        // Redirect bo'lsa, yangi URL ga o'tish
+        downloadFileFromUrl(response.headers.location).then(resolve).catch(reject);
+        return;
+      }
+
+      if (response.statusCode !== 200) {
+        reject(new Error(`HTTP Status: ${response.statusCode}`));
+        return;
+      }
+
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => resolve(Buffer.concat(chunks)));
+      response.on('error', reject);
+    }).on('error', reject);
+  });
 };
 
 export default async function handler(req, res) {
