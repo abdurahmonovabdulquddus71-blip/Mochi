@@ -2002,7 +2002,7 @@ export default function Home() {
 /* Telefon */
 @media (max-width: 600px) {
   .ad-responsive iframe {
-    transform: scale(0.8);
+    transform: scale(0.6);
     transform-origin: center;
   }
 }
