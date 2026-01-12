@@ -169,7 +169,7 @@ export default function InfoPage() {
 
         {/* Footer */}
         <div style={styles.footer}>
-          <p>&copy; 2025 MochiTV. Barcha huquqlar himoyalangan.</p>
+          <p>&copy; 2026 MochiTV. Barcha huquqlar himoyalangan.</p>
         </div>
       </div>
     </div>

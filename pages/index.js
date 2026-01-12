@@ -11,43 +11,52 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const LOGO_URL = '/assets/lego.png';
 
-// --- REKLAMA KOMPONENTI (XAVFSIZ VA ISHONCHLI) ---
-const AdBanner = ({ adKey, width, height }) => {
-  const adRef = useRef(null);
+// AdBanner Component for safe and responsive ad rendering
+const AdBanner = ({ zoneId, width, height }) => {
+  const bannerRef = useRef(null);
 
   useEffect(() => {
-    if (adRef.current && !adRef.current.firstChild) {
-      // 1. Sozlamalar skripti (atOptions)
-      const confScript = document.createElement('script');
-      confScript.type = 'text/javascript';
-      confScript.innerHTML = `
-        atOptions = {
-          'key' : '${adKey}',
-          'format' : 'iframe',
-          'height' : ${height},
-          'width' : ${width},
-          'params' : {}
-        };
-      `;
-
-      // 2. Yuklovchi skript (invoke.js)
-      const srcScript = document.createElement('script');
-      srcScript.type = 'text/javascript';
-      srcScript.src = `https://www.highperformanceformat.com/${adKey}/invoke.js`;
-
-      // 3. Ketma-ket ulash
-      adRef.current.appendChild(confScript);
-      adRef.current.appendChild(srcScript);
+    if (bannerRef.current) {
+      const iframe = document.createElement('iframe');
+      iframe.style.width = width + 'px';
+      iframe.style.height = height + 'px';
+      iframe.style.border = '0';
+      iframe.style.overflow = 'hidden';
+      iframe.scrolling = 'no';
+      
+      // Clear previous content
+      bannerRef.current.innerHTML = '';
+      bannerRef.current.appendChild(iframe);
+      
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+          <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:transparent;">
+            <script type="text/javascript">
+              atOptions = {
+                'key' : '${zoneId}',
+                'format' : 'iframe',
+                'height' : ${height},
+                'width' : ${width},
+                'params' : {}
+              };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/${zoneId}/invoke.js"></script>
+          </body>
+        </html>
+      `);
+      doc.close();
     }
-  }, [adKey, width, height]);
+  }, [zoneId, width, height]);
 
   return (
-    <div className="ad-wrapper">
-      <div ref={adRef} className="ad-content"></div>
+    <div className="ad-responsive-container">
+        <div ref={bannerRef} className="ad-iframe-wrapper" />
     </div>
   );
 };
-// --- REKLAMA TUGADI ---
 
 // Skeleton Card Component
 const SkeletonCard = () => (
@@ -695,21 +704,31 @@ export default function Home() {
           background-color: rgba(255, 255, 255, 0.05);
         }
 
-        /* --- ADVERTISING STYLES (REKLAMA) --- */
-        .ad-wrapper {
-          width: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin: 20px 0;
-          overflow: hidden; /* Telefonda ekrandan chiqib ketmasligi uchun */
-          position: relative;
-          z-index: 5;
+        /* Ad Styles */
+        .ad-responsive-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            width: 100%;
+            overflow: hidden;
+            z-index: 10;
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            .ad-iframe-wrapper iframe {
+                max-width: 100%;
+                transform-origin: center;
+                transform: scale(0.9);
+            }
         }
         
-        .ad-content {
-           display: flex;
-           justify-content: center;
+        @media (max-width: 480px) {
+            .ad-iframe-wrapper iframe {
+                transform: scale(0.9);
+                margin: -10px 0;
+            }
         }
 
         /* Skeleton Styles */
@@ -874,7 +893,7 @@ export default function Home() {
           height: 600px; /* Increased height for desktop impact */
           position: relative;
           overflow: hidden;
-          margin-bottom: 20px;
+          margin-bottom: 40px;
           background: #000;
         }
 
@@ -2136,13 +2155,12 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- CAROUSEL REKLAMASI --- */}
+        {/* Reklama: Carousel tagida */}
         <AdBanner 
-          adKey="aabc912a3e8097c8c313dc56858d421f" 
+          zoneId="aabc912a3e8097c8c313dc56858d421f" 
           width={468} 
           height={60} 
         />
-        {/* --- REKLAMA TUGADI --- */}
 
         {/* Admin Panel Button */}
         {isAdmin && (
@@ -2190,12 +2208,12 @@ export default function Home() {
             </div>
           )}
 
-          {/* --- PASTKI REKLAMA --- */}
-          <AdBanner 
-            adKey="285e32cb497fee845c0f132f57f97cae" 
-            width={728} 
-            height={90} 
-          />
+           {/* Reklama: Ko'proq ko'rish tugmasi tagida */}
+           <AdBanner 
+              zoneId="285e32cb497fee845c0f132f57f97cae" 
+              width={728} 
+              height={90} 
+            />
         </div>
 
         {/* Search Modal */}
@@ -2274,7 +2292,7 @@ export default function Home() {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 MochiTv.Uz Barcha huquqlar himoyalangan.</p>
+            <p>&copy; 2026 MochiTv.Uz Barcha huquqlar himoyalangan.</p>
           </div>
         </div>
       </footer>
