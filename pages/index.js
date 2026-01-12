@@ -342,6 +342,30 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+  const script1 = document.createElement('script');
+  script1.innerHTML = `
+    atOptions = {
+      'key' : '285e32cb497fee845c0f132f57f97cae',
+      'format' : 'iframe',
+      'height' : 90,
+      'width' : 728,
+      'params' : {}
+    };
+  `;
+
+  const script2 = document.createElement('script');
+  script2.src = 'https://www.highperformanceformat.com/285e32cb497fee845c0f132f57f97cae/invoke.js';
+  script2.async = true;
+
+  const container = document.getElementById('ad-728');
+  if (container) {
+    container.appendChild(script1);
+    container.appendChild(script2);
+  }
+}, []);
+
+
   const checkCurrentUser = async () => {
     try {
       const user = localStorage.getItem('anime_user');
@@ -1962,6 +1986,27 @@ export default function Home() {
             gap: 10px;
           }
         }
+
+        .ad-responsive {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 25px 0;
+  overflow: hidden;
+}
+
+.ad-responsive iframe {
+  max-width: 100%;
+}
+
+/* Telefon */
+@media (max-width: 600px) {
+  .ad-responsive iframe {
+    transform: scale(0.8);
+    transform-origin: center;
+  }
+}
+
       `}</style>
 
       <div id="ad-container"></div>
@@ -2127,6 +2172,10 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* REKLAMA */}
+<div id="ad-728" className="ad-responsive"></div>
+
 
         {/* Search Modal */}
         {searchModal && (
