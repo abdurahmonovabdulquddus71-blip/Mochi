@@ -726,7 +726,7 @@ export default function Home() {
         
         @media (max-width: 480px) {
             .ad-iframe-wrapper iframe {
-                transform: scale(0.9);
+                transform: scale(1);
                 margin: -10px 0;
             }
         }
