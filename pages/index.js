@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Heart, LogOut, Lock, Loader, Eye, Play, Youtube, X, Search } from 'lucide-react';
 import { FaTelegramPlane } from "react-icons/fa";
 import { LuInstagram } from "react-icons/lu";
@@ -10,6 +10,38 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const LOGO_URL = '/assets/lego.png';
+
+// --- ADVERTISEMENT COMPONENT START ---
+// Reklama skriptlarini React ichida to'g'ri ishlatish uchun komponent
+const AdBanner = ({ id, width, height }) => {
+  const adRef = useRef(null);
+
+  useEffect(() => {
+    if (adRef.current) {
+      // Konfiguratsiya skripti
+      const confScript = document.createElement('script');
+      confScript.type = 'text/javascript';
+      confScript.innerHTML = `atOptions = { 'key' : '${id}', 'format' : 'iframe', 'height' : ${height}, 'width' : ${width}, 'params' : {} };`;
+
+      // Ijro etuvchi skript
+      const invokeScript = document.createElement('script');
+      invokeScript.type = 'text/javascript';
+      invokeScript.src = `https://www.highperformanceformat.com/${id}/invoke.js`;
+
+      // Tozalash va yangisini qo'shish
+      adRef.current.innerHTML = '';
+      adRef.current.appendChild(confScript);
+      adRef.current.appendChild(invokeScript);
+    }
+  }, [id, width, height]);
+
+  return (
+    <div className="ad-container">
+      <div ref={adRef} style={{ width: width, height: height, maxWidth: '100%' }} />
+    </div>
+  );
+};
+// --- ADVERTISEMENT COMPONENT END ---
 
 // Skeleton Card Component
 const SkeletonCard = () => (
@@ -342,30 +374,6 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-  const script1 = document.createElement('script');
-  script1.innerHTML = `
-    atOptions = {
-      'key' : '285e32cb497fee845c0f132f57f97cae',
-      'format' : 'iframe',
-      'height' : 90,
-      'width' : 728,
-      'params' : {}
-    };
-  `;
-
-  const script2 = document.createElement('script');
-  script2.src = 'https://www.highperformanceformat.com/285e32cb497fee845c0f132f57f97cae/invoke.js';
-  script2.async = true;
-
-  const container = document.getElementById('ad-728');
-  if (container) {
-    container.appendChild(script1);
-    container.appendChild(script2);
-  }
-}, []);
-
-
   const checkCurrentUser = async () => {
     try {
       const user = localStorage.getItem('anime_user');
@@ -679,6 +687,16 @@ export default function Home() {
 
         ::-webkit-scrollbar-track {
           background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Ad Responsive Styles */
+        .ad-container {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          overflow: hidden;
+          margin: 30px 0;
         }
 
         /* Skeleton Styles */
@@ -1986,27 +2004,6 @@ export default function Home() {
             gap: 10px;
           }
         }
-
-        .ad-responsive {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin: 25px 0;
-  overflow: hidden;
-}
-
-.ad-responsive iframe {
-  max-width: 100%;
-}
-
-/* Telefon */
-@media (max-width: 600px) {
-  .ad-responsive iframe {
-    transform: scale(0.6);
-    transform-origin: center;
-  }
-}
-
       `}</style>
 
       <div id="ad-container"></div>
@@ -2126,6 +2123,13 @@ export default function Home() {
           )}
         </div>
 
+        {/* Carousel Ad Placement */}
+        <AdBanner 
+          id="aabc912a3e8097c8c313dc56858d421f" 
+          width={468} 
+          height={60} 
+        />
+
         {/* Admin Panel Button */}
         {isAdmin && (
           <div className="admin-section">
@@ -2171,11 +2175,14 @@ export default function Home() {
               </button>
             </div>
           )}
+
+          {/* Load More Ad Placement */}
+          <AdBanner 
+            id="285e32cb497fee845c0f132f57f97cae" 
+            width={728} 
+            height={90} 
+          />
         </div>
-
-        {/* REKLAMA */}
-<div id="ad-728" className="ad-responsive"></div>
-
 
         {/* Search Modal */}
         {searchModal && (
