@@ -11,37 +11,43 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const LOGO_URL = '/assets/lego.png';
 
-// --- ADVERTISEMENT COMPONENT START ---
-// Reklama skriptlarini React ichida to'g'ri ishlatish uchun komponent
-const AdBanner = ({ id, width, height }) => {
+// --- REKLAMA KOMPONENTI (XAVFSIZ VA ISHONCHLI) ---
+const AdBanner = ({ adKey, width, height }) => {
   const adRef = useRef(null);
 
   useEffect(() => {
-    if (adRef.current) {
-      // Konfiguratsiya skripti
+    if (adRef.current && !adRef.current.firstChild) {
+      // 1. Sozlamalar skripti (atOptions)
       const confScript = document.createElement('script');
       confScript.type = 'text/javascript';
-      confScript.innerHTML = `atOptions = { 'key' : '${id}', 'format' : 'iframe', 'height' : ${height}, 'width' : ${width}, 'params' : {} };`;
+      confScript.innerHTML = `
+        atOptions = {
+          'key' : '${adKey}',
+          'format' : 'iframe',
+          'height' : ${height},
+          'width' : ${width},
+          'params' : {}
+        };
+      `;
 
-      // Ijro etuvchi skript
-      const invokeScript = document.createElement('script');
-      invokeScript.type = 'text/javascript';
-      invokeScript.src = `https://www.highperformanceformat.com/${id}/invoke.js`;
+      // 2. Yuklovchi skript (invoke.js)
+      const srcScript = document.createElement('script');
+      srcScript.type = 'text/javascript';
+      srcScript.src = `https://www.highperformanceformat.com/${adKey}/invoke.js`;
 
-      // Tozalash va yangisini qo'shish
-      adRef.current.innerHTML = '';
+      // 3. Ketma-ket ulash
       adRef.current.appendChild(confScript);
-      adRef.current.appendChild(invokeScript);
+      adRef.current.appendChild(srcScript);
     }
-  }, [id, width, height]);
+  }, [adKey, width, height]);
 
   return (
-    <div className="ad-container">
-      <div ref={adRef} style={{ width: width, height: height, maxWidth: '100%' }} />
+    <div className="ad-wrapper">
+      <div ref={adRef} className="ad-content"></div>
     </div>
   );
 };
-// --- ADVERTISEMENT COMPONENT END ---
+// --- REKLAMA TUGADI ---
 
 // Skeleton Card Component
 const SkeletonCard = () => (
@@ -689,14 +695,21 @@ export default function Home() {
           background-color: rgba(255, 255, 255, 0.05);
         }
 
-        /* Ad Responsive Styles */
-        .ad-container {
+        /* --- ADVERTISING STYLES (REKLAMA) --- */
+        .ad-wrapper {
           width: 100%;
           display: flex;
           justify-content: center;
           align-items: center;
-          overflow: hidden;
-          margin: 30px 0;
+          margin: 20px 0;
+          overflow: hidden; /* Telefonda ekrandan chiqib ketmasligi uchun */
+          position: relative;
+          z-index: 5;
+        }
+        
+        .ad-content {
+           display: flex;
+           justify-content: center;
         }
 
         /* Skeleton Styles */
@@ -861,7 +874,7 @@ export default function Home() {
           height: 600px; /* Increased height for desktop impact */
           position: relative;
           overflow: hidden;
-          margin-bottom: 40px;
+          margin-bottom: 20px;
           background: #000;
         }
 
@@ -2123,12 +2136,13 @@ export default function Home() {
           )}
         </div>
 
-        {/* Carousel Ad Placement */}
+        {/* --- CAROUSEL REKLAMASI --- */}
         <AdBanner 
-          id="aabc912a3e8097c8c313dc56858d421f" 
+          adKey="aabc912a3e8097c8c313dc56858d421f" 
           width={468} 
           height={60} 
         />
+        {/* --- REKLAMA TUGADI --- */}
 
         {/* Admin Panel Button */}
         {isAdmin && (
@@ -2176,9 +2190,9 @@ export default function Home() {
             </div>
           )}
 
-          {/* Load More Ad Placement */}
+          {/* --- PASTKI REKLAMA --- */}
           <AdBanner 
-            id="285e32cb497fee845c0f132f57f97cae" 
+            adKey="285e32cb497fee845c0f132f57f97cae" 
             width={728} 
             height={90} 
           />
