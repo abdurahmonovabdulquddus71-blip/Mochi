@@ -2,8 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/anime/[slug]": "pages/anime/[slug].js",
-  "/": "pages/index.js",
-  "/api/auth-token": "pages/api/auth-token.js",
-  "/api/stream": "pages/api/stream.js"
+  "/search": "pages/search.js",
+  "/profile/[username]": "pages/profile/[username].js",
+  "/": "pages/index.js"
 }

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Film, Plus, Trash2, X, Upload, ArrowLeft, Loader, Edit, Play } from 'lucide-react';
 
-// Supabase konfiguratsiyasi
-const SUPABASE_URL = 'https://itxndrvoolbvzdseuljx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0eG5kcnZvb2xidnpkc2V1bGp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzUyNjYsImV4cCI6MjA3MzcxMTI2Nn0.4x264DWr3QVjgPQYqf73QdAypfhKXvuVxw3LW9QYyGM';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export default function EpisodesManager() {
   const [modal, setModal] = useState({ show: false, type: '', message: '', title: '', onConfirm: null, data: null });

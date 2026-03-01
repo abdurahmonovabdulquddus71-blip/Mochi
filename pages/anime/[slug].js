@@ -4,9 +4,9 @@ import Head from 'next/head';
 import { ArrowLeft, Heart, Eye, Share2, Send, Play, X, Copy, Check } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase sozlamalari
-const supabaseUrl = 'https://itxndrvoolbvzdseuljx.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0eG5kcnZvb2xidnpkc2V1bGp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzUyNjYsImV4cCI6MjA3MzcxMTI2Nn0.4x264DWr3QVjgPQYqf73QdAypfhKXvuVxw3LW9QYyGM';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
 
 let supabaseInstance = null;
 const getSupabase = () => {
@@ -158,6 +158,8 @@ export default function AnimeDetail() {
         preload: 'metadata',
         volume: 0.8,
         autoplay: false,
+          disableTooltips: true // ⚡ ba'zi playerlarda ishlaydi
+
       });
 
       dpRef.current = dp;
@@ -575,9 +577,7 @@ return (
       height: 100%;
     }
 
-    .dplayer-menu, .dplayer-mask {
-       display: none !important;
-    }
+   
 
     .episode-btn {
       transition: all 0.3s ease;
